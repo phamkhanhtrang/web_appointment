@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<!-- Full Screen Search Start -->
+<div class="modal fade" id="searchModal" tabindex="-1">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content" style="background: rgba(9, 30, 62, .7);">
+            <div class="modal-header border-0">
+                <button type="button" class="btn bg-white btn-close" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body d-flex align-items-center justify-content-center">
+                <div class="input-group" style="max-width: 600px;">
+                    <input type="text" class="form-control bg-transparent border-primary p-3"
+                        placeholder="Type search keyword">
+                    <button class="btn btn-primary px-4"><i class="bi bi-search"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Appointment Start -->
+<div class="container " style="transform: scale(0.9); transform-origin: top center;">
+    <div class="row d-flex justify-content-center">
+        <!-- Cột bên trái: Thông tin bác sĩ -->
+        <div class="col-lg-6 mb-4">
+            <div class="team-item" min-height="400px">
+                <!-- Ảnh bác sĩ -->
+                <div class="position-relative rounded-top" style="z-index: 1;">
+                    <img class="img-fluid rounded-top w-100" src="{{doctor_name.user.avatar.url}}" alt="">
+                </div>
+                <div class="team-text position-relative bg-light text-center rounded-bottom p-4 pt-5">
+                    <h4 class="mb-2">{{doctor_name.user.first_name}} {{doctor_name.user.last_name}}</h4>
+                    <p class="text-primary mb-0">{{doctor_name.specialization}}</p>
+                </div>
+                <!-- Lựa chọn ngày -->
+                <!-- Chọn ngày -->
+                <div id="day-buttons" class="day-section">
+                    <h4 class="section-title">Chọn ngày và giờ</h4>
+                    <div class="date-container" id="dateContainer">
+                        <!-- Ngày sẽ được render ở đây -->
+                    </div>
+                </div>
+
+                <!-- Chọn giờ -->
+                <div id="time-buttons" class="time-section">
+                    <h2 class="section-title"></h2>
+                    <div class="time-container" id="timeContainer">
+                        <!-- Giờ sẽ được render ở đây -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Cột bên phải: Form đặt lịch -->
+        <div class="col-lg-6 " min-height="100px">
+            <div
+                class="appointment-form  d-flex flex-column bg-appointment justify-content-center text-center p-5 wow zoomIn">
+                {% if messages %}
+                {% for message in messages %}
+                {% if message.tags == "success" and "Đặt lịch thành công!" in message.message %}
+                <div class="col-12 cancel show" id="cancel">
+                    <span>
+                        <i>✔️</i>Đặt lịch thành công
+                        <span class="close" onclick="hideToast()">✖</span>
+                    </span>
+                </div>
+                {% endif %}
+                {% endfor %}
+                {% endif %}
+                <h1 class="text-white mb-4">Thông tin lịch hẹn</h1>
+                <form method=post>
+                    {% csrf_token%}
+                    <div class="row g-3" min-height="400px">
+                        <div class="col-12 col-sm-6">
+                            <input type="text" class="form-control bg-light border-0" placeholder="Hãy nhập tên của bạn"
+                                style="height: 55px;" name="username" id="username" value="{{ user.username }}">
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <input type="email" class="form-control bg-light border-0"
+                                placeholder="Hãy nhập Email của bạn" style="height: 55px;" value="{{ user.email }}">
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <input type="text" class="form-control bg-light border-0" placeholder="Tên bác sĩ"
+                                style="height: 55px;"
+                                value="Tên bác sĩ: {{ doctor_name.user.first_name }} {{ doctor_name.user.last_name }}">
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <input type="text" class="form-control bg-light border-0" placeholder="Giá dịch vụ"
+                                style="height: 55px;" value="{{ doctor_name.price_vnd  }} ">
+                        </div>
+                        <div class="col-12">
+                            <textarea class="form-control bg-light border-0" rows="3" name="notes" id="notes"
+                                placeholder="Tình trạng của bạn"></textarea>
+                        </div>
+                        <div class="col-12 ">
+                            <select name="payment_method" class="form-control bg-light border-0" style="height: 55px;"
+                                required>
+                                <option value="cash">Tiền mặt</option>
+                                <option value="momo">Paypal</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <input type="text" class="form-control bg-light border-0" name="appointment_time"
+                                id="appointment_time" style="height: 55px;" value="">
+                        </div>
+                        <div class="col-12">
+                            <button onclick="showToast()" class="btn btn-light w-100 py-3" type="submit">Đặt
+                                lịch</button>
+                        </div>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Appointment End -->
+
+
+<script>
+    // schedules lúc này đã là object hợp lệ, không cần JSON.parse
+    window.schedules = JSON.parse('{{ schedules|safe }}');
+</script>
+
+
+{%endblock%}
+
+
+
+
+<a href="#" class="btn btn-lg btn-primary btn-lg-square rounded back-to-top"><i class="bi bi-arrow-up"></i></a>
+
+
+
+</body>
+
+</html>

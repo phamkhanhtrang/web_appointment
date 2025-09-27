@@ -1,0 +1,214 @@
+{% load static %}
+{% include "doctor/dashboard.html" %}
+{% block content %}
+<style>
+  .calendar-card {
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    background: #ded7d732;
+  }
+
+  #calendar {
+    max-width: 900px;
+    margin: 0 auto;
+    color: #000;
+  }
+
+  /* Change event text color */
+  .fc-event-title,
+  .fc-event-time {
+    color: #000 !important;
+  }
+
+  /* Change header text color */
+  .fc .fc-list-event-title,
+  .fc .fc-list-event-time,
+  .fc .fc-list-event-dot,
+  .fc .fc-list-day-text,
+  .fc .fc-list-day-side {
+    color: #000 !important;
+    /* chữ đen */
+  }
+</style>
+
+<div class="page-wrapper">
+  <div class="content container-fluid">
+    {% if messages %}
+     <div id = "messages" >
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+        </div>
+    {% endfor %}
+    </div>
+    {% endif %}
+    <div class="calendar-card">
+      <div id="calendar"></div>
+
+      <!-- Modal kê đơn thuốc -->
+      <div class="modal fade" id="prescriptionModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <form method="post" action="{% url 'calendar_view' %}">
+              {% csrf_token %}
+              <!-- Header -->
+              <div class="modal-header">
+                <h5 class="modal-title">Kê đơn thuốc</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+
+              <!-- Body -->
+              <div class="modal-body" >
+                <input type="hidden" name="appointment_id" id="appointmentId">
+                <!-- Bệnh nhân -->
+                <div class="form-group mb-3">
+                  <label class="form-label">Tên bệnh nhân</label>
+                  <input type="text" id="patientNameField" class="form-control" readonly>
+                </div>
+
+                <div class="form-group mb-3">
+                  <label class="form-label">Chuẩn đoán bênh:</label>
+                  <input type="text" name="diagnosis" id="diagnosisField" class="form-control">
+                </div>
+                <!-- Bảng thuốc -->
+                <table class="table table-bordered" id="medicine-table-{{ appointment.id }}">
+                  <thead>
+                    <tr>
+                      <th>Tên thuốc</th>
+                      <th>Liều lượng</th>
+                      <th>Cách dùng</th>
+                      <th>SL</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><input type="text" name="medicine_name[]" class="form-control" placeholder="Nhập tên thuốc">
+                      </td>
+                      <td><input type="text" name="dosage[]" class="form-control" placeholder="Ví dụ: 2 viên/ngày"></td>
+                      <td><input type="text" name="usage[]" class="form-control" placeholder="Ví dụ: Uống sau ăn"></td>
+                      <td><input type="number" name="quantity[]" class="form-control" placeholder="SL" style="width: 60px;"></td>
+                      <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">Xóa</button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <!-- Nút thêm thuốc -->
+                <button type="button" class="btn btn-success btn-sm mb-3"
+                  onclick="addRow('medicine-table-{{ appointment.id }}')">Thêm thuốc</button>
+
+                <!-- Ghi chú -->
+                <div class="form-group">
+                  <label class="form-label">Ghi chú</label>
+                  <textarea name="note" class="form-control" rows="2" placeholder="Ghi chú thêm"></textarea>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Tên bác sĩ</label>
+                  <input type="text" id="doctorNameField" class="form-control" readonly value="{{ user.get_full_name }}">
+                </div>
+
+              </div>
+
+              <!-- Footer -->
+              <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Lưu đơn thuốc</button>
+              </div>
+
+            </form>
+
+          </div>
+        </div>
+      </div>
+      <!-- End Modal -->
+
+    </div>
+  </div>
+</div>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var calendarEl = document.getElementById('calendar');
+    var events = {{ events_json|safe }};
+
+  var calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'timeGridWeek',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+    },
+    events: events,
+    eventColor: '#378006',
+
+    eventDidMount: function (info) {
+      if (info.event.extendedProps.status === 'pending') {
+        info.el.style.backgroundColor = '#f39c12';
+      } else if (info.event.extendedProps.status === 'confirmed') {
+        info.el.style.backgroundColor = '#27ae60';
+      } else if (info.event.extendedProps.status === 'completed') {
+        info.el.style.backgroundColor = '#2980b9';
+      }
+    },
+
+    // ✅ Custom nội dung event, thêm nút "Kê thuốc"
+    eventContent: function (arg) {
+      let container = document.createElement('div');
+      container.style.position = "relative";
+      container.style.width = "100%";
+      container.style.height = "100%";
+      container.style.display = "flex";
+      container.style.justifyContent = "space-between";
+      container.style.alignItems = "center";
+
+      // Tên bệnh nhân
+      let titleEl = document.createElement('span');
+      titleEl.innerText = arg.event.title;
+      titleEl.style.color = "white";
+      titleEl.style.fontWeight = "bold";
+      container.appendChild(titleEl);
+
+      if (arg.view.type === 'timeGridDay' || arg.view.type === 'timeGridWeek') {
+        let btn = document.createElement('button');
+        btn.innerText = 'Kê thuốc';
+        btn.className = 'btn btn-sm btn-primary';
+        btn.style.padding = "4px 10px";
+        btn.style.fontSize = "14px";
+
+        btn.onclick = function (e) {
+          e.stopPropagation(); // tránh trigger eventClick
+          document.getElementById("appointmentId").value = arg.event.id;
+          document.getElementById("patientNameField").value = arg.event.extendedProps.patient_name;
+          var modal = new bootstrap.Modal(document.getElementById('prescriptionModal'));
+          modal.show();
+        };
+
+        container.appendChild(btn);
+      }
+
+      return { domNodes: [container] };
+    }
+
+  });
+
+  calendar.render();
+});
+
+  function addRow(tableId) {
+    var table = document.getElementById(tableId).getElementsByTagName('tbody')[0];
+    var newRow = table.rows[0].cloneNode(true);
+    Array.from(newRow.querySelectorAll('input')).forEach(input => input.value = '');
+    table.appendChild(newRow);
+  }
+  function removeRow(btn) {
+    var row = btn.closest('tr');
+    var table = row.parentNode;
+    if (table.rows.length > 1) {
+      table.removeChild(row);
+    }
+  }
+</script>
+
+{%endblock%}

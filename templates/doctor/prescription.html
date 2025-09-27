@@ -1,0 +1,130 @@
+{% load static %}
+{% include "doctor/dashboard.html" %}
+{% block content %}
+<!-- Page Content -->
+<div class="page-wrapper">
+    <div class="content container-fluid">
+        <div class="content">
+            <div class="container-fluid">
+
+                <div class="row">
+                    <div class="col-lg-8 offset-lg-2">
+                        <div class="invoice-content">
+                               
+                                        <div class="invoice-logo">
+                                            <strong><p style ="font-size:32px; text-align:center"   > Đơn thuốc</p></strong>                                       </div>
+                                   
+
+                               
+                            <!-- Invoice Item -->
+                            <div class="invoice-item">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="invoice-info">
+                                            <strong class="customer-text">Tên bệnh nhân</strong>
+                                            <p class="invoice-details invoice-details-two">
+                                                Dr. Darren Elder                                              </p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="invoice-info invoice-info2">
+                                            <strong class="customer-text">Tình trạng bệnh</strong>
+                                            <p class="invoice-details">
+                                                Walter Roberson  
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- /Invoice Item -->
+                            <!-- Invoice Item -->
+                            <div class="invoice-item invoice-table-wrap">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="table-responsive">
+                                            <table id = "medicineTable"class="invoice-table table table-bordered">
+                                                <thead>
+                                                    <tr>
+                                                         
+                                                        <th class="text-center">STT</th>
+                                                        <th class="text-center">Tên thuốc</th>
+                                                        <th class="text-right">Giá tiền</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                         
+                                                        <td class="text-center">1</td>
+                                                        <td class="text-center">$0</td>
+                                                        <td class="text-right">$100</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                      <button class="btn btn-primary btn-block" onclick="addRow()">Thêm thuốc</button>
+                                    </div>
+                                    <div class="col-md-6 col-xl-4 ml-auto">
+                                        <div class="table-responsive">
+                                            <table  class="invoice-table-two table">
+                                                <tbody>
+                                                    <tr>
+                                                        <th>Subtotal:</th>
+                                                        <td><span>$350</span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Discount:</th>
+                                                        <td><span>-10%</span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Total Amount:</th>
+                                                        <td><span>$315</span></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- /Invoice Item -->
+
+                            <!-- Invoice Information -->
+                            <div class="other-info">
+                                <h4>Other information</h4>
+                                <p class="text-muted mb-0">Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                                    Vivamus sed dictum ligula, cursus blandit risus. Maecenas eget metus non tellus
+                                    dignissim aliquam ut a ex. Maecenas sed vehicula dui, ac suscipit lacus. Sed finibus
+                                    leo vitae lorem interdum, eu scelerisque tellus fermentum. Curabitur sit amet
+                                    lacinia lorem. Nullam finibus pellentesque libero.</p>
+                            </div>
+                            <!-- /Invoice Information -->
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+<!-- /Page Content -->
+ <script>
+function addRow() {
+    const table = document.getElementById("medicineTable").getElementsByTagName('tbody')[0];
+
+    const newRow = table.insertRow();
+
+    const cell1 = newRow.insertCell(0); // Description
+    const cell2 = newRow.insertCell(1); // STT
+    const cell3 = newRow.insertCell(2); // Tên thuốc
+ 
+    const rowCount = table.rows.length;
+
+    cell1.innerHTML = rowCount;
+    cell1.classList.add('text-center');
+    cell2.innerHTML = `<input type="text" class="form-control" placeholder="Tên thuốc">`;
+    cell3.innerHTML = `<input type="text" class="form-control" placeholder="Giá tiền">`;
+    cell3.classList.add('text-center');
+ }
+</script>
+{%endblock%}

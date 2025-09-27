@@ -1,0 +1,94 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Đăng ký | Doccure</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+
+    <!-- Favicons -->
+    <link href="assets/img/favicon.png" rel="icon">
+
+    <!-- Bootstrap CSS -->
+    {% load bootstrap5 %}
+  {% bootstrap_css %}
+  {% bootstrap_javascript %}
+
+    <!-- Fontawesome CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css">
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="account-page">
+
+    <!-- Main Wrapper -->
+    <div class="main-wrapper">
+
+
+        <!-- Register Content -->
+        <div class="content">
+            <div class="container-fluid">
+                <div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+                    <div class="col-md-6 col-lg-5">
+                        <div class="card shadow-lg border-0">
+                            <div class="card-body p-5">
+                                <div class="text-center mb-4">
+                                    <h3 class="mt-3">Đăng nhập Admin</h3>
+                                </div>
+                                <form action="" method="post"> 
+                                    {% csrf_token %}
+                                    <div class="form-group mb-3">
+                                        <label for="username" class="form-label">Tên đăng nhập</label>
+                                        <input type="text" id="username" name="username" class="form-control" required>
+                                    </div> 
+                                    <div class="form-group mb-3">
+                                        <label for="password" class="form-label">Tạo mật khẩu</label>
+                                        <input type="password" id="password" name="password" class="form-control" required>
+                                    </div>
+                                   
+                                    <button type="submit" class="btn btn-primary w-100">Đăng nhập</button>
+                                </form>
+                                <div class="login-or my-4 text-center">
+                                    <span class="or-line"></span>
+                                    <span class="span-or">or</span>
+                                </div>
+                                <div class="social-login">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- /Register Content -->
+
+        <!-- Footer -->
+        <footer class="footer mt-auto">
+            <div class="footer-top py-4 bg-light">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-md-6 text-center text-md-start mb-2 mb-md-0">
+                            <span class="ms-2">Doccure &copy; 2025</span>
+                        </div>
+                        <div class="col-md-6 text-center text-md-end">
+                            <a href="term-condition.html" class="me-3">Terms</a>
+                            <a href="privacy-policy.html">Privacy</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+        <!-- /Footer -->
+
+    </div>
+    <!-- /Main Wrapper -->
+
+    <!-- jQuery -->
+    <script src="assets/js/jquery.min.js"></script>
+    <!-- Bootstrap Core JS -->
+    <script src="assets/js/popper.min.js"></script>
+    <script src="assets/js/bootstrap.min.js"></script>
+    <!-- Custom JS -->
+    <script src="assets/js/script.js"></script>
+</body>
+</html>

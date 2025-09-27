@@ -1,0 +1,179 @@
+{% load static %}
+{% include "admin/dashboard.html" %}
+{% block content %}
+<!-- /Sidebar -->
+
+<!-- Page Wrapper -->
+<div class="page-wrapper">
+
+	<div class="content container-fluid">
+
+		<!-- Page Header -->
+		<div class="page-header">
+			<div class="row">
+				<div class="col-sm-12">
+					<h3 class="page-title">Xin chào Amin</h3>
+
+				</div>
+			</div>
+		</div>
+		<!-- /Page Header -->
+
+		<div class="row">
+			<div class="col-xl-3 col-sm-6 col-12">
+				<div class="card">
+					<div class="card-body">
+						<div class="dash-widget-header">
+							<span class="dash-widget-icon text-primary border-primary">
+								<i class="fe fe-users"></i>
+							</span>
+							<div class="dash-count">
+								<h3>{{ admin_total_doctors }}</h3>
+							</div>
+						</div>
+						<div class="dash-widget-info">
+							<h6 class="text-muted">Bác sĩ</h6>
+							<div class="progress progress-sm">
+								<div class="progress-bar bg-primary w-50"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-xl-3 col-sm-6 col-12">
+				<div class="card">
+					<div class="card-body">
+						<div class="dash-widget-header">
+							<span class="dash-widget-icon text-success">
+								<i class="fe fe-heart"></i>
+							</span>
+							<div class="dash-count">
+								<h3>{{ admin_total_patients }}</h3>
+							</div>
+						</div>
+						<div class="dash-widget-info">
+							<h6 class="text-muted">Bệnh nhân</h6>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-xl-3 col-sm-6 col-12">
+				<div class="card">
+					<div class="card-body">
+						<div class="dash-widget-header">
+							<span class="dash-widget-icon text-danger border-danger">
+								<i class="fe fe-calendar"></i>
+							</span>
+							<div class="dash-count">
+								<h3>{{ admin_total_appointments }}</h3>
+							</div>
+						</div>
+						<div class="dash-widget-info">
+
+							<h6 class="text-muted">Cuộc hẹn</h6>
+							<div class="progress progress-sm">
+								<div class="progress-bar bg-danger w-50"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-xl-3 col-sm-6 col-12">
+				<div class="card">
+					<div class="card-body">
+						<div class="dash-widget-header">
+							<span class="dash-widget-icon text-warning border-warning">
+								<i class="fe fe-money"></i>
+							</span>
+							<div class="dash-count">
+								<h3>{{ admin_total_revenue_vnd }}</h3>
+							</div>
+						</div>
+						<div class="dash-widget-info">
+
+							<h6 class="text-muted">Doanh thu</h6>
+							<div class="progress progress-sm">
+								<div class="progress-bar bg-warning w-50"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-12 col-lg-6">
+
+				<!-- Sales Chart -->
+				<div class="card card-chart">
+					<div class="card-header">
+						<h4 class="card-title">Cuộc hẹn</h4>
+					</div>
+					<div class="card-body">
+						<canvas id="appointmentsChart" height="70" width="100"></canvas>
+
+					</div>
+				</div>
+				<!-- /Sales Chart -->
+
+			</div>
+			<div class="col-md-12 col-lg-6">
+
+				<!-- Invoice Chart -->
+				<div class="card card-chart">
+					<div class="card-header">
+						<h4 class="card-title">Doanh thu</h4>
+					</div>
+					<div class="card-body">
+						<canvas id="revenueChart" height="70" width="100"></canvas>
+					</div>
+				</div>
+				<!-- /Invoice Chart -->
+
+			</div>
+		</div>
+
+	</div>
+</div>
+<!-- /Page Wrapper -->
+
+
+<script>
+	const chartData = JSON.parse('{{ admin_chart_data|escapejs }}');
+	const labels = chartData.map(item => item.month);
+	const appointments = chartData.map(item => item.appointments);
+	const revenue = chartData.map(item => item.revenue);
+
+	const ctx1 = document.getElementById('appointmentsChart').getContext('2d');
+	new Chart(ctx1, {
+		type: 'bar',
+		data: {
+			labels: labels,
+			datasets: [{
+				label: 'Cuộc hẹn theo tháng',
+				data: appointments,
+				backgroundColor: 'rgba(54, 162, 235, 0.6)',
+				borderColor: 'rgba(54, 162, 235, 1)',
+				borderWidth: 1
+			}]
+		}
+	});
+	const ctx2 = document.getElementById('revenueChart').getContext('2d');
+	new Chart(ctx2, {
+		type: 'line',
+		data: {
+			labels: labels,
+			datasets: [{
+				label: 'Doanh thu theo tháng',
+				data: revenue,
+				backgroundColor: 'rgba(255, 206, 86, 0.3)',
+				borderColor: 'rgba(255, 206, 86, 1)',
+				borderWidth: 2,
+				tension: 0.4
+			}]
+		}
+	});
+	console.log("frwerewrwe")
+
+</script>
+
+{%endblock%}

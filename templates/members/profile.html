@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<div class="container my-5">
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  {% endfor %}
+{% endif %}
+
+    <!-- Profile Section -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            Thông Tin Cá Nhân
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="name" class="form-label">Tên đăng nhập</label>
+                        <input type="text" class="form-control" id="username" name = "username" value="{{ patient.user.username}}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="name" class="form-label">Họ và tên</label>
+                        <input type="text" class="form-control" id="fullname" name = "fullname" value="{{ patient.user.first_name}} {{ patient.user.last_name}}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="phone" class="form-label">Số điện thoại</label>
+                        <input type="text" class="form-control" id="phone" name="phone" value="{{patient.user.phone_number }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{patient.user.email }}"
+                            placeholder="email@example.com">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="password" class="form-label">Mật khẩu</label>
+                        <input type="password" class="form-control" id="password" name="password"placeholder="******">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Cập nhật thông tin</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Appointment Table -->
+    <div class="card">
+        <div class="card-header bg-success text-white">
+            Lịch Hẹn Gần Đây
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered table-hover">
+                <thead class="table-primary">
+                    <tr>
+                        <th>STT</th>
+                        <th>Tên Bác Sĩ</th>
+                        <th>Giá tiền</th>
+                        <th>Trạng thái đặt lịch</th>
+                        <th>Ngày Đặt Lịch</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appointment in appointments %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ appointment.doctor.user.get_full_name}}</td>
+                        <td>{{ appointment.price }}</td>
+                        <td>{{ appointment.get_status_display }}</td>
+                        <td>{{appointment.appointment_time| date:"d/m/y H:i"}}</td>
+                    </tr>
+                    {% empty %}
+                    <li>Ko có lịch hẹn nào</li>
+                    {% endfor%}
+                    <!-- Có thể dùng vòng lặp hoặc thêm dòng mới -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{%endblock%}
+
+
+<!-- Back to Top -->
+<a href="#" class="btn btn-lg btn-primary btn-lg-square rounded back-to-top"><i class="bi bi-arrow-up"></i></a>
+
+
+</body>
+
+</html>

@@ -1,0 +1,224 @@
+{% load static %}
+{% include "admin/dashboard.html" %}
+{% block content %}
+<div class="page-wrapper">
+	<div class="content container-fluid">
+		<div class="container py-4">
+			<div class="sticky-header text-center fade-in">
+				<h1 class="fw-bold mb-1" style="letter-spacing:1px;">📊 Thống kê các cuộc hẹn</h1>
+				<p class="text-muted mb-0">Tổng quan hoạt động, lịch hẹn trong hệ thống.</p>
+			</div>
+			<div class="row g-4 mb-4 fade-in">
+				<div class="col-md-5">
+					<div class="glass-card p-4 d-flex align-items-center">
+						<span class="stat-icon"><i class="bi bi-person-badge"></i></span>
+						<div>
+							<div class="small text-muted">Tổng số cuộc hẹn thành công</div>
+							<div class="fs-3 fw-bold">{{ admin_total_appointments }}</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="col-md-5">
+					<div class="glass-card p-4 d-flex align-items-center">
+						<span class="stat-icon"><i class="bi bi-calendar-check"></i></span>
+						<div>
+							<div class="small text-muted">Tổng doanh thu lịch hẹn</div>
+							<div class="fs-3 fw-bold">{{admin_total_revenue_vnd}}</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Page Header -->
+
+		<div class="chart-card mb-5 fade-in">
+			<h6 class="fw-bold mb-3">📋 Danh sách cuộc hẹn</h6>
+			<div class="table-responsive">
+				<table class="datatable table table-hover align-middle table-center mb-0">
+					<thead class="table-light">
+						<tr>
+							<th class="text-center">STT</th>
+							<th style="width:60px;">Bác sĩ</th>
+							<th class="text-center">Tên bệnh nhân</th>
+							<th class="text-center">Thời gian </th>
+							<th class="text-center">Trạng thái</th>
+							<th class="text-center">Số tiền hẹn</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for appointment in admin_list_appointment %}
+						<tr>
+							<td>{{ forloop.counter }}</td>
+							<td>
+								<!-- <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="avatar"
+									class="rounded-circle me-2" width="36"> -->
+								<span class="fw-bold">BS. {{ appointment.doctor.user.get_full_name}}</span>
+							</td>
+							<td><span class="fw-bold">{{ appointment.patient.user.get_full_name}}</span></td>
+							<td class="text-center">{{ appointment.appointment_time| date:"H:i d/m/y" }}</td>
+							<td>
+								<div class="status-toggle">
+									<form method="post">
+										{% csrf_token %}
+										<input type="hidden" name="appointment_id" value="{{ appointment.id }}">
+										<select name="status" class="form-select" onchange="this.form.submit()">
+											<option value="pending" {% if appointment.status == "pending" %}selected{% endif %}>Chờ bạn/bác sĩ xác nhận</option>
+											<option value="confirmed" {% if appointment.status == 'confirmed' %}selected{% endif %}> Bạn/ Bác sĩ đã xác nhận</option>
+											<option value="completed" {% if appointment.status == 'completed' %}selected{% endif %}>Hoàn thành</option>
+											<option value="cancelled" {% if appointment.status == 'cancelled' %}selected{% endif %}>Bị hủy</option>
+
+										</select>
+									</form>
+								</div>
+							</td>
+							<td class="text-right">{{appointment.price_vnd}}
+							</td>
+						</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<h2>chọn ngày xem biểu đồ</h2>
+		<div class="row g-4">
+			<div class="d-flex mb-3">
+				<input type="date" id="startDate" class="form-control me-2">
+				<input type="date" id="endDate" class="form-control">
+				<button type="button" class="btn btn-primary" onclick="filterChart()">Lọc</button>
+				<button type="button" class="btn btn-primary" onclick="exportExcel()">Xuất file excel</button>
+			</div>
+			<!-- Biểu đồ cột: Lịch hẹn theo trạng thái -->
+			<div class="col-md-6">
+				<div class="card shadow-sm">
+					<div class="card-body">
+						<h5 class="card-title text-center">Số lượng cuộc hẹn theo ngày</h5>
+						<canvas id="appointmentChart"></canvas>
+					</div>
+				</div>
+			</div>
+
+			<!-- Biểu đồ tròn: Bệnh nhân mới / quay lại -->
+			<div class="col-md-6">
+				<div class="card shadow-sm">
+					<div class="card-body">
+						<h5 class="card-title text-center">Tỉ lệ trạng thái của lịch hẹn</h5>
+						<canvas id="statusChart"></canvas>
+
+					</div>
+				</div>
+			</div>
+		</div>
+
+
+
+	</div>
+</div>
+<!-- /Page Wrapper -->
+<script>
+	$('.datatable').DataTable();
+
+	const chartData = JSON.parse('{{ admin_chart_data|safe }}');
+
+	const today = new Date()
+	const lastweek = new Date()
+	lastweek.setDate(today.getDate() - 6)
+
+	const getDateStr = (d) => d.toISOString().slice(0, 10);
+
+	function buildChartData(days,sourceData ) {
+		const filteredData = days.map(d => {
+			const found = sourceData.find(item => item.day == d);
+			return found ? found : { day: d, appointments: 0, pending: 0, confirmed: 0, completed: 0, cancelled: 0 };
+		});
+		return {
+			labels: filteredData.map(item => item.day),
+			totalAppointments: filteredData.map(item => item.appointments),
+			statusCounts: {
+				pending: filteredData.map(item => item.pending),
+				confirmed: filteredData.map(item => item.confirmed),
+				completed: filteredData.map(item => item.completed),
+				cancelled: filteredData.map(item => item.cancelled),
+			}
+		};
+	}
+
+	const filteredDays = [];
+	for (let d = new Date(lastweek); d <= today; d.setDate(d.getDate() + 1)) {
+		filteredDays.push(getDateStr(new Date(d)));
+	}
+
+	let {labels, totalAppointments, statusCounts} = buildChartData(filteredDays,chartData)
+
+	const appointmentChart = new Chart(document.getElementById('appointmentChart'), {
+		type: "line",
+		data: {
+			labels: labels,
+			datasets: [{
+				label: "Tổng số cuộc hẹn",
+				data: totalAppointments,
+				borderColor: 'rgba(75, 192, 192, 1)',
+				backgroundColor: "rgba(75, 192, 192, 0.2)",
+				fill: true
+			}]
+		}, options: { responsive: true }
+	});
+	const statusChart = new Chart(
+		document.getElementById('statusChart').getContext('2d'), {
+		type: "bar",
+		data: {
+			labels: labels,
+			datasets: [
+				{ label: "Đang chờ", data: statusCounts.pending, backgroundColor: "#ffc107" },
+				{ label: "Đã xác nhận", data: statusCounts.confirmed, backgroundColor: "#17a2b8" },
+				{ label: "Hoãn thành", data: statusCounts.completed, backgroundColor: "#28a745" },
+				{ label: "Đã hủy", data: statusCounts.cancelled, backgroundColor: "#dc3545" },
+			]
+		}
+	});
+
+	function filterChart() {
+		const startDate = document.getElementById('startDate').value;
+		const endDate = document.getElementById('endDate').value;
+		if (!startDate || !endDate) {
+			alert("Vui lòng chọn đầy đủ ngày bắt đầu và kết thúc");
+			return;
+		}
+		const filteredDays = chartData
+			.map(item => item.day)
+			.filter(dayStr => dayStr >= startDate && dayStr <= endDate)
+			.sort();
+		
+     let {labels, totalAppointments, statusCounts} = buildChartData(filteredDays,chartData)
+		// --- Cập nhật line chart (tổng cuộc hẹn) ---
+		appointmentChart.data.labels = labels;
+		appointmentChart.data.datasets[0].data = totalAppointments;
+		appointmentChart.update();
+
+		// --- Cập nhật bar chart (theo trạng thái) ---
+		statusChart.data.labels = labels;
+		statusChart.data.datasets[0].data = statusCounts.pending;
+		statusChart.data.datasets[1].data = statusCounts.confirmed;
+		statusChart.data.datasets[2].data = statusCounts.completed;
+		statusChart.data.datasets[3].data = statusCounts.cancelled;
+		statusChart.update();
+
+		// console.log("Filtered:", filteredData);
+
+	}
+
+function exportExcel() {
+  const start = document.getElementById("startDate").value;
+  const end = document.getElementById("endDate").value;
+  if (!start || !end) {
+    alert("Vui lòng chọn ngày!");
+    return;
+  }
+  window.location.href = `?start=${start}&end=${end}&export=1`;
+}
+
+
+
+</script>
+{%endblock%}

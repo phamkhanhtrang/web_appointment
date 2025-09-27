@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Hóa Đơn Thanh Toán</h3>
+                </div>
+                <div class="card-body">
+                    <p><strong>Tên bệnh nhân:</strong> {{ appointment.patient.user.get_full_name }}</p>
+                    <p><strong>Bác sĩ:</strong> {{ appointment.doctor.user.get_full_name }}</p>
+                    <p><strong>Chuyên khoa:</strong> {{ appointment.doctor.specialization }}</p>
+                    <p><strong>Thời gian khám:</strong> {{ appointment.appointment_time|date:"d/m/Y H:i" }}</p>
+                    <p><strong>Phương thức thanh toán:</strong> {{ appointment.get_payment_method_display }}</p>
+                    <hr>
+                    <h4 class="text-end">Tổng tiền: <span class="text-primary">{{ appointment.doctor.price_vnd }}</span>
+                    </h4>
+                    {% if payment_status == "completed" %}
+                    <h4> Thanh toán thành công</h4>
+                    <div class="card-footer text-end">
+                        <a href="{% url 'profile' %}" class="btn btn-secondary">Trang chủ</a>
+                    </div>
+                    {% else %}
+                    <h4 class="text-end">{{ paypal_payment_button.render }}</h4>
+                    {% endif %}
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}

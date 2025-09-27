@@ -1,0 +1,172 @@
+{% load static %}
+{% include "doctor/dashboard.html" %}
+{% block content %}
+
+<!-- Page Wrapper -->
+<div class="page-wrapper">
+	<div class="content container-fluid">
+
+		<!-- Page Header -->
+		<div class="page-header">
+			<div class="row">
+				<div class="col-sm-12">
+					<h3 class="page-title">Danh sách cuộc hẹn</h3>
+
+				</div>
+			</div>
+		</div>
+		<!-- /Page Header -->
+
+		<!-- Recent Orders -->
+		<div class="chart-card mb-5 fade-in">
+			<div class="table-responsive">
+				<table class="datatable table table-hover align-middle table-center mb-0">
+					<thead class="table-light">
+						<tr>
+							<th>STT</th>
+							<th>Tên bệnh nhân</th>
+							<th>Thời gian hẹn</th>
+							<th>Trạng thái</th>
+							<th>Đơn thuốc</th>
+							<th class="text-right">Số tiền</th>
+						</tr>
+					</thead>
+
+					<tbody>
+						{% for appointment in appointments %}
+						<tr>
+							<td>{{ forloop.counter }}</td>
+							<td>
+								<h2 class="table-avatar">
+									<!-- <a href="profile.html" class="avatar avatar-sm mr-2"><img
+														class="avatar-img rounded-circle"
+														src="assets/img/patients/patient1.jpg" ></a> -->
+									<a>{{ appointment.patient.user.get_full_name}} </a>
+								</h2>
+							</td>
+							<td>{{appointment.appointment_time| date:"d/m/y H:i"}}</span>
+							</td>
+							<td>
+								<div class="status-toggle">
+									<form method="post">
+										{% csrf_token %}
+										<input type="hidden" name="appointment_id" value="{{ appointment.id }}">
+										<select name="status" class="form-select" onchange="this.form.submit()">
+											<option value="pending" {% if appointment.status == "pending" %}selected{% endif %}>Chờ bạn/bác sĩ xác nhận</option>
+											<option value="confirmed" {% if appointment.status == 'confirmed' %}selected{% endif %}> Bạn/ Bác sĩ đã xác nhận</option>
+											<option value="completed" {% if appointment.status == 'completed' %}selected{% endif %}>Hoàn thành</option>
+											<option value="cancelled" {% if appointment.status == 'cancelled' %}selected{% endif %}>Bị hủy</option>
+
+										</select>
+									</form>
+								</div>
+							</td>
+							<td>
+								<a href="#" data-bs-toggle="modal"
+									data-bs-target="#prescription-details-{{ appointment.id }}">
+									<button class="btn btn-primary btn-block">Đơn thuốc </button>
+								</a>
+							</td>
+
+							<td class="text-right">{{appointment.price_vnd}}
+							</td>
+						</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+				{% for appointment in appointments %}
+				<div class="modal fade" id="prescription-details-{{ appointment.id }}" aria-hidden="true" role="dialog">
+					<div class="modal-dialog modal-dialog-centered" role="document">
+						<div class="modal-content">
+							<div class="modal-header">
+								<strong>
+									<p style="font-size:32px; text-align:center">Đơn thuốc</p>
+								</strong>
+								<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+									<span aria-hidden="true">&times;</span>
+								</button>
+							</div>
+							<div class="modal-body">
+								<form method="post">
+									{% csrf_token %}
+									<div class="form-group mb-3">
+										<label>Tên bệnh nhân</label>
+										<input type="text" class="form-control"
+											value="{{ appointment.patient.user.get_full_name }}" readonly>
+									</div>
+									<table class="table table-bordered" id="medicine-table-{{ appointment.id }}">
+										<thead>
+											<tr>
+												<th>Tên thuốc</th>
+												<th>Liều lượng</th>
+												<th>Cách dùng</th>
+												<th></th>
+											</tr>
+										</thead>
+										<tbody>
+  {% if appointment.prescription %}
+    {% for detail in appointment.prescription.details.all %}
+      <tr>
+        <td><input type="text" name="medicine_name[]" class="form-control" value="{{ detail.medication_name }}" readonly></td>
+        <td><input type="text" name="dosage[]" class="form-control" value="{{ detail.dosage }}" readonly></td>
+        <td><input type="text" name="usage[]" class="form-control" value="{{ detail.usage }}" readonly></td>
+        <!-- <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">Xóa</button></td> -->
+      </tr>
+    {% endfor %}
+  {% else %}
+    <tr>
+      <td><input type="text" name="medicine_name[]" class="form-control" placeholder="Nhập tên thuốc" value="Không có" readonly></td>
+      <td><input type="text" name="dosage[]" class="form-control" placeholder="Ví dụ: 2 viên/ngày" value="Không có" readonly></td>
+      <td><input type="text" name="usage[]" class="form-control" placeholder="Ví dụ: Uống sau ăn" value="Không có" readonly></td>
+      <!-- <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">Xóa</button></td> -->
+    </tr>
+  {% endif %}
+</tbody>
+
+									</table>
+									<!-- <button type="button" class="btn btn-success btn-sm mb-3"
+										onclick="addRow('medicine-table-{{ appointment.id }}')">Thêm
+										thuốc</button> -->
+									<div class="form-group">
+										<label>Ghi chú</label>
+										<textarea name="note" class="form-control" rows="2"
+											placeholder="Ghi chú thêm"></textarea>
+									</div>
+
+									
+								</form>
+							</div>
+						</div>
+					</div>
+				</div>
+				{% endfor %}
+
+			</div>
+
+
+		</div>
+	</div>
+</div>
+<script>
+	$('.datatable').DataTable();
+
+	$('.status-select').select({
+		width: '100%',
+		minimumResultsForSearch: 0 // always show search box
+	});
+
+	function addRow(tableId) {
+		var table = document.getElementById(tableId).getElementsByTagName('tbody')[0];
+		var newRow = table.rows[0].cloneNode(true);
+		Array.from(newRow.querySelectorAll('input')).forEach(input => input.value = '');
+		table.appendChild(newRow);
+	}
+	function removeRow(btn) {
+		var row = btn.closest('tr');
+		var table = row.parentNode;
+		if (table.rows.length > 1) {
+			table.removeChild(row);
+		}
+	}
+</script>
+{%endblock%}

@@ -1,0 +1,10 @@
+Xin chào {{ patient.user.get_full_name }},
+
+Bạn đã thanh toán thành công cho lịch hẹn với {{ doctor.user.get_full_name }}.
+
+Thông tin lịch hẹn:
+- Ngày giờ: {{ appointment.appointment_time }}
+- Ghi chú: {{ appointment.notes }}
+- Giá: {{ doctor.price_vnd }}
+
+Cảm ơn bạn đã sử dụng dịch vụ!

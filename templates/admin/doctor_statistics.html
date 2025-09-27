@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Thống kê Bác sĩ</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+	background-color: #f8f9fa;
+	color: #333;
+	font-family: 'Mada', sans-serif;
+	font-size: 1rem;
+	height: 100%;
+	line-height: 1.5;
+	overflow-x: hidden;
+}
+
+    /* .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 24px;
+      box-shadow: 0 8px 32px rgba(44, 62, 80, 0.12);
+      backdrop-filter: blur(4px);
+      transition: box-shadow 0.2s, transform 0.2s;
+      border: 1px solid rgba(200, 200, 200, 0.18);
+    }
+
+    .glass-card:hover {
+      box-shadow: 0 16px 48px rgba(44, 62, 80, 0.18);
+      transform: translateY(-2px) scale(1.01);
+    } */
+
+    /* .stat-icon {
+      font-size: 2.5rem;
+      margin-right: 16px;
+      color: #1976d2;
+      background: linear-gradient(135deg, #42a5f5 0%, #fffde4 100%);
+      border-radius: 50%;
+      padding: 12px;
+      box-shadow: 0 2px 8px rgba(44, 62, 80, 0.08);
+    } */
+
+    .chart-card {
+      border-radius: 24px;
+      box-shadow: 0 4px 24px rgba(44, 62, 80, 0.10);
+      padding: 2rem;
+      background: rgba(255, 255, 255, 0.95);
+      margin-bottom: 2rem;
+    }
+
+    .table th,
+    .table td {
+      vertical-align: middle;
+      font-size: 1rem;
+    }
+
+    .fw-bold {
+      font-weight: 700 !important;
+    }
+
+    .sticky-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: 0 2px 8px rgba(44, 62, 80, 0.08);
+      padding: 1.5rem 0 1rem 0;
+      margin-bottom: 2rem;
+    }
+
+    .fab {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      z-index: 999;
+      background: #1976d2;
+      color: #fff;
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      box-shadow: 0 4px 16px rgba(44, 62, 80, 0.18);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .fab:hover {
+      background: #1565c0;
+    }
+
+    .fade-in {
+      animation: fadeIn 0.7s;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container py-4">
+    <div class="sticky-header text-center fade-in">
+      <h1 class="fw-bold mb-1" style="letter-spacing:1px;">📊 Thống kê Bác sĩ</h1>
+      <p class="text-muted mb-0">Tổng quan hoạt động, lịch hẹn và doanh thu của các bác sĩ trong hệ thống.</p>
+    </div>
+
+    <!-- Cards tổng quan -->
+    <div class="row g-4 mb-4 fade-in">
+      <div class="col-md-4">
+        <div class="glass-card p-4 d-flex align-items-center">
+          <span class="stat-icon"><i class="bi bi-person-badge"></i></span>
+          <div>
+            <div class="small text-muted">Tổng số bác sĩ</div>
+            <div class="fs-3 fw-bold">15</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="glass-card p-4 d-flex align-items-center">
+          <span class="stat-icon"><i class="bi bi-calendar-check"></i></span>
+          <div>
+            <div class="small text-muted">Tổng lịch hẹn</div>
+            <div class="fs-3 fw-bold">280</div>
+          </div>
+        </div>
+      </div>
+    
+      <div class="col-md-4">
+        <div class="glass-card p-4 d-flex align-items-center">
+          <span class="stat-icon"><i class="bi bi-currency-dollar"></i></span>
+          <div>
+            <div class="small text-muted">Doanh thu</div>
+            <div class="fs-3 fw-bold">₫120,000,000</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Biểu đồ -->
+    <div class="row g-4 mb-4 fade-in">
+      <div class="col-md-6">
+        <div class="chart-card">
+          <h6 class="fw-bold mb-3">📊 So sánh lịch hẹn theo bác sĩ</h6>
+          <div class="d-flex mb-3">
+            <input type="date" id="startDate" class="form-control me-2">
+            <input type="date" id="endDate" class="form-control">
+            <button class="bt btn-primary" onclick="filterChart()">Lọc</button>
+          </div>
+          <canvas id="doctorBarChart" height="120"></canvas>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="chart-card">
+          <h6 class="fw-bold mb-3">📈 Lịch hẹn theo ngày</h6>
+
+          <div class="d-flex mb-3">
+            <input type="date" id="lineStartDate" class="form-control me-2">
+            <input type="date" id="lineEndDate" class="form-control me-2">
+            <button class="btn btn-primary" onclick="filterLineChart()">Lọc</button>
+          </div>
+          <canvas id="appointmentLineChart" height="120"></canvas>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Bảng chi tiết -->
+    <div class="chart-card mb-5 fade-in">
+      <h6 class="fw-bold mb-3">📋 Thống kê chi tiết từng bác sĩ</h6>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th style="width:60px;">Bác sĩ</th>
+              <th>Chuyên khám</th>
+              <th class="text-center">Giá khám bệnh</th>
+              <th class="text-center">SĐT</th>
+              <th class="text-end">Lịch làm việc</th>
+              <th class = "text-end">Thống kê</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="avatar" class="rounded-circle me-2"
+                  width="36">
+                <span class="fw-bold">BS. Lê Minh Anh</span>
+              </td>
+              <td><span class="badge bg-primary">Nội tổng quát</span></td>
+              <td class="text-center">80</td>
+              <td class="text-center">70</td>
+              <td class="text-end text-success fw-bold">₫40,000,000</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Export Button -->
+  <div class="fab" title="Xuất báo cáo">
+    <i class="bi bi-download"></i>
+  </div>
+
+  <script>
+    // Biểu đồ cột
+    const barCtx = document.getElementById("doctorBarChart").getContext("2d");
+
+    const appointmentData = [
+      { doctor: "Lê Minh Anh", date: "2025-09-01", count: 20 },
+      { doctor: "Lê Minh Anh", date: "2025-09-05", count: 30 },
+      { doctor: "Mai Minh An", date: "2025-09-02", count: 25 },
+      { doctor: "Trần Thị Minh", date: "2025-09-04", count: 15 },
+      { doctor: "Nguyễn Văn Nam", date: "2025-09-06", count: 18 },
+      // thêm dữ liệu giả lập khác...
+    ];
+    let doctorChart = new Chart(barCtx, {
+      type: "bar",
+      data: {
+        labels: ["Lê Minh Anh", "Mai Minh An", "Trần Thị Minh", "Nguyễn Văn Nam"],
+        datasets: [{
+          label: "Số lịch hẹn",
+          data: [80, 65, 50, 45],
+          backgroundColor: ["#42a5f5", "#66bb6a", "#ffa726", "#ef5350"]
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+    function filterChart() {
+      const startDate = document.getElementById("startDate").value;
+      const endDate = document.getElementById("endDate").value;
+      if (!startDate || !endDate) {
+        alert("Vui lòng chọn cả ngày bắt đầu và ngày kết thúc.");
+        return;
+      }
+      const doctors = ["Lê Minh Anh", "Mai Minh An", "Trần Thị Minh", "Nguyễn Văn Nam"];
+      let counts = doctors.map(doc => {
+        return appointmentData
+          .filter(item => item.doctor === doc && item.date >= startDate && item.date <= endDate)
+          .reduce((sum, item) => sum + item.count, 0);
+      })
+      doctorChart.data.datasets[0].data = counts;
+      doctorChart.update();
+    }
+    // Biểu đồ đường
+    const lineCtx = document.getElementById("appointmentLineChart").getContext("2d");
+
+    // Dữ liệu giả lập theo ngày
+    const lineDataRaw = [
+    { date: "2025-07-01", count: 10 },
+    { date: "2025-07-02", count: 12 },
+    { date: "2025-07-03", count: 14 },
+    // ... có thể generate đầy đủ 31 ngày tháng 7
+    { date: "2025-08-01", count: 20 },
+    { date: "2025-08-02", count: 18 },
+    { date: "2025-08-03", count: 25 },
+    { date: "2025-08-04", count: 22 },
+    { date: "2025-08-05", count: 28 },
+    { date: "2025-08-06", count: 26 },
+    { date: "2025-08-07", count: 30 },
+    { date: "2025-08-08", count: 32 },
+    { date: "2025-08-09", count: 27 },
+    { date: "2025-08-10", count: 29 },
+    { date: "2025-08-11", count: 31 },
+    { date: "2025-08-12", count: 33 },
+    { date: "2025-08-13", count: 35 },
+    { date: "2025-08-14", count: 28 },
+    { date: "2025-09-01", count: 2 },
+    { date: "2025-09-10", count: 30 },
+    { date: "2025-09-11", count: 130 },
+  ];
+    const today = new Date();
+    const startDate = new Date();
+    startDate.setDate(today.getDate() - 13);
+
+    const formatDate = (d) => d.toISOString().split('T')[0];
+    const startStr = formatDate(startDate);
+    const endStr = formatDate(today);
+    const defaultData = lineDataRaw.filter(item => item.date >= startStr && item.date <= endStr);
+    // Khởi tạo chart mặc định
+    let lineChart = new Chart(lineCtx, {
+      type: "line",
+      data: {
+        labels: defaultData.map(item =>
+          new Date(item.date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })
+        ),
+        datasets: [{
+          label: "Số lịch hẹn",
+          data: defaultData.map(item => item.count),
+          borderColor: "#66bb6a",
+          backgroundColor: "rgba(102,187,106,0.1)",
+          tension: 0.3,
+          fill: true,
+          pointRadius: 5,
+          pointBackgroundColor: "#66bb6a"
+        }]
+      },
+      options: { responsive: true }
+    });
+
+    // Hàm lọc dữ liệu theo khoảng ngày
+    function filterLineChart() {
+      const start = document.getElementById("lineStartDate").value;
+      const end = document.getElementById("lineEndDate").value;
+
+      if (!start || !end) {
+        alert("Vui lòng chọn khoảng thời gian!");
+        return;
+      }
+
+      // Lọc dữ liệu trong khoảng start-end
+      const filtered = lineDataRaw.filter(item => item.date >= start && item.date <= end);
+      if (filtered.length === 0) {
+        alert("Không có dữ liệu trong khoảng ngày đã chọn.");
+        return;
+      }
+      // Cập nhật chart
+      lineChart.data.labels = filtered.map(item =>
+        new Date(item.date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })
+      );
+      lineChart.data.datasets[0].data = filtered.map(item => item.count);
+      lineChart.update();
+    }
+
+    // Export button (demo)
+    document.querySelector('.fab').onclick = function () {
+      alert('Chức năng xuất báo cáo sẽ được phát triển!');
+    };
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,311 @@
+{% load static %}
+{% include "admin/dashboard.html" %}
+{% block content %}
+<style>
+  #calendar {
+    max-width: 900px;
+    margin: 20px auto;
+  }
+</style>
+<div class="page-wrapper">
+  <div class="content container-fluid">
+
+
+    <div class="container my-4">
+      <h2 class="text-center mb-4">Thống kê của BS:{{doctor.user.first_name}} {{doctor.user.last_name}}</h2>
+
+      <!-- Thông tin tổng quan -->
+      <div class="row g-4 mb-4">
+        <div class="col-md-3">
+          <div class="card shadow-sm text-center">
+            <div class="card-body">
+              <h5 class="card-title">Tổng lịch hẹn</h5>
+              <p class="fs-4 fw-bold text-primary">{{ doctor_total_appointments }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card shadow-sm text-center">
+            <div class="card-body">
+              <h5 class="card-title">Hoàn thành</h5>
+              <p class="fs-4 fw-bold text-success">{{ doctor_total_appointments_completed}}</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card shadow-sm text-center">
+            <div class="card-body">
+              <h5 class="card-title">Đang chờ</h5>
+              <p class="fs-4 fw-bold text-warning">{{doctor_total_appointments_pending}}</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card shadow-sm text-center">
+            <div class="card-body">
+              <h5 class="card-title">Bị hủy</h5>
+              <p class="fs-4 fw-bold text-danger">{{doctor_total_appointments_cancelled}}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <h2>Lịch làm việc của bác sĩ</h2>
+      <div id="calendar"></div>
+      <!-- Biểu đồ -->
+      <h2>chọn ngày xem biểu đồ</h2>
+      <div class="row g-4">
+        <div class="d-flex mb-3">
+          <input type="date" id="startDate" class="form-control me-2">
+          <input type="date" id="endDate" class="form-control">
+          <button type="button" class="btn btn-primary" onclick="filterChart()">Lọc</button>
+<button type="button" class="btn btn-success" onclick="exportExcel()">Xuất Excel</button>        </div>
+        <!-- Biểu đồ cột: Lịch hẹn theo trạng thái -->
+        <div class="col-md-6">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title text-center">Lịch hẹn theo trạng thái</h5>
+
+              <canvas id="statusChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Biểu đồ tròn: Bệnh nhân mới / quay lại -->
+        <div class="col-md-6">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title text-center">Doanh thu theo tháng</h5>
+              <canvas id="revenueChart"></canvas>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+     
+
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var calendarEl = document.getElementById('calendar');
+
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: 'dayGridMonth',
+      selectable: true,
+      events: {{ events| safe }},  // Dữ liệu sự kiện từ backend
+    select: function (info) {
+      let isWork = confirm("Bạn muốn đặt ngày " + info.startStr + " là NGÀY LÀM VIỆC? (OK = Làm, Cancel = Nghỉ)");
+      let status = isWork ? 'work' : 'off';
+
+      let existingEvent = calendar.getEvents();
+      existingEvent.forEach(ev => {
+        if (ev.startStr === info.startStr) {
+          ev.remove();
+        }
+      });
+
+      calendar.addEvent({
+        title: isWork ? 'Làm việc' : 'Nghỉ',
+        start: info.startStr,
+        allDay: true,
+        color: isWork ? 'green' : 'red'
+      });
+
+      fetch("", {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": "{{ csrf_token }}",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          date: info.startStr,
+          status: status
+        })
+      }).then(res => res.json()).then(data => {
+        console.log("Save:", data);
+      });
+    }
+    });
+
+  calendar.render();
+});
+
+  const today = new Date();
+  const lastWeek = new Date();
+  lastWeek.setDate(today.getDate() - 6);
+
+  const getDateStr = (d) => d.toISOString().slice(0, 10);
+  const filteredDays = [];
+  for (let d = new Date(lastWeek); d <= today; d.setDate(d.getDate() + 1)) {
+    filteredDays.push(getDateStr(new Date(d)));
+  }
+
+  // Parse dữ liệu từ Django
+  let revenueChart, statusChart;
+  const revenueData = JSON.parse('{{ chart_data|escapejs }}'); // [{day: '2025-09-10', revenue: 100}, ...]
+  const statusData = JSON.parse('{{ status_data|escapejs }}'); // {'2025-09-10': {confirmed:..}}
+
+  // Mapping revenue theo ngày
+  const revenue = filteredDays.map(d => {
+    const found = revenueData.find(item => item.day === d);
+    return found ? found.revenue : 0;
+  });
+
+  // Vẽ chart doanh số
+  const ctx2 = document.getElementById('revenueChart').getContext('2d'); 
+  revenueChart = new Chart(ctx2, {
+    type: 'line',
+    data: {
+      labels: filteredDays,
+      datasets: [{
+        label: 'Doanh số',
+        data: revenue,
+        backgroundColor: 'rgba(255, 206, 86, 0.3)',
+        borderColor: 'rgba(255, 206, 86, 1)',
+        fill: true
+      }]
+    },
+    options: { responsive: true }
+  });
+
+  // Mapping status theo ngày
+  const confirmedData = filteredDays.map(d => statusData[d]?.confirmed || 0);
+  const pendingData = filteredDays.map(d => statusData[d]?.pending || 0);
+  const cancelledData = filteredDays.map(d => statusData[d]?.cancelled || 0);
+  const completedData = filteredDays.map(d => statusData[d]?.completed || 0);
+
+  // Vẽ chart trạng thái
+  const ctx3 = document.getElementById('statusChart').getContext('2d');
+  statusChart = new Chart(ctx3, {
+    type: 'bar',
+    data: {
+      labels: filteredDays,
+      datasets: [
+        { label: 'Đã xác nhận', data: confirmedData, backgroundColor: '#17a2b8' },
+        { label: 'Đang chờ', data: pendingData, backgroundColor: '#ffc107' },
+        { label: 'Bị hủy', data: cancelledData, backgroundColor: '#dc3545' },
+        { label: 'Hoàn thành', data: completedData, backgroundColor: '#28a745' }
+      ]
+    },
+    options: { responsive: true }
+  });
+
+
+
+  function filterChart() {
+    const startDate = document.getElementById("startDate").value;
+    const endDate = document.getElementById("endDate").value;
+
+    if (!startDate || !endDate) {
+      alert("Vui lòng chọn cả ngày bắt đầu và ngày kết thúc.");
+      return;
+    }
+
+    // --- Lọc statusData ---
+    const filteredDays = Object.keys(statusData)
+      .filter(dayStr => dayStr >= startDate && dayStr <= endDate)
+      .sort();
+
+    const confirmedData = filteredDays.map(d => statusData[d]?.confirmed || 0);
+    const pendingData = filteredDays.map(d => statusData[d]?.pending || 0);
+    const cancelledData = filteredDays.map(d => statusData[d]?.cancelled || 0);
+    const completedData = filteredDays.map(d => statusData[d]?.completed || 0);
+
+    statusChart.data.labels = filteredDays;
+    statusChart.data.datasets[0].data = confirmedData;
+    statusChart.data.datasets[1].data = pendingData;
+    statusChart.data.datasets[2].data = cancelledData;
+    statusChart.data.datasets[3].data = completedData;
+    statusChart.update();
+
+    // --- Lọc revenueData ---
+    const revenueDays = revenueData
+      .map(item => item.day)
+      .filter(dayStr => dayStr >= startDate && dayStr <= endDate)
+      .sort();
+
+    const revenue = revenueDays.map(d => {
+      const found = revenueData.find(item => item.day === d);
+      return found ? found.revenue : 0;
+    });
+
+    revenueChart.data.labels = revenueDays;
+    revenueChart.data.datasets[0].data = revenue;
+    revenueChart.update();
+
+    // Debug thử
+    console.log("Filtered status days:", filteredDays);
+    console.log("Filtered revenue days:", revenueDays);
+  }
+
+//   function exportExcel() {
+//   const start = document.getElementById("startDate").value;
+//   const end = document.getElementById("endDate").value;
+
+//   if (!start || !end) {
+//     alert("Vui lòng chọn ngày!");
+//     return;
+//   }
+
+//   // Chuyển hướng sang URL export
+//   // window.location.href = `/export-excel?start=${start}&end=${end}`;
+  
+//   const a = document.createElement('a');
+//   // a.href = url;
+//   a.download = "";
+//   document.body.appendChild(a);
+//   a.click();
+//   document.body.removeChild(a);
+
+//   setTimeout(()=>{
+//     alert("Xuất file thành công!")
+//   },1000);
+// }
+
+function exportExcel() {
+  const start = document.getElementById("startDate").value;
+  const end = document.getElementById("endDate").value;
+  if (!start || !end) {
+    alert("Vui lòng chọn ngày!");
+    return;
+  }
+  window.location.href = `?start=${start}&end=${end}&export=1`;
+}
+
+
+
+
+  // Biểu đồ tròn: Bệnh nhân mới / quay lại
+  //  const patientData = JSON.parse('{{ patient_data|escapejs }}');
+
+  // Tính tổng bệnh nhân mới & quay lại
+  // const totalNew = patientData.reduce((sum, item) => sum + item.new, 0);
+  // const totalOld = patientData.reduce((sum, item) => sum + item.old, 0);
+
+  // const ctx1 = document.getElementById('patientChart').getContext('2d');
+  // new Chart(ctx1, {
+  //   type: 'pie',
+  //   data: {
+  //     labels: ['Bệnh nhân mới', 'Bệnh nhân quay lại'],
+  //     datasets: [{
+  //       data: [totalNew, totalOld],
+  //       backgroundColor: ['#007bff', '#17a2b8']
+  //     }]
+  //   },
+  //   options: {
+  //     responsive: true,
+  //     plugins: {
+  //       title: { display: true, text: 'Tỷ lệ bệnh nhân mới và  bệnh nhân cũ' }
+  //     }
+  //   }
+  // });
+
+
+</script>
+
+{%endblock%}

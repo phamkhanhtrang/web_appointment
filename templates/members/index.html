@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div id="spinner"
+    class="show bg-white position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center">
+    <div class="spinner-grow text-primary m-1" role="status">
+        <span class="sr-only">Loading...</span>
+    </div>
+    <div class="spinner-grow text-dark m-1" role="status">
+        <span class="sr-only">Loading...</span>
+    </div>
+    <div class="spinner-grow text-secondary m-1" role="status">
+        <span class="sr-only">Loading...</span>
+    </div>
+</div>
+<!-- Carousel Start -->
+<div class="container-fluid p-0">
+    <div id="header-carousel" class="carousel slide carousel-fade" data-bs-ride="carousel">
+        <div class="carousel-inner">
+            <div class="carousel-item active">
+                <img class="w-100" src="{% static 'img/banner.png' %}" alt="Image">
+                <div class="carousel-caption d-flex flex-column align-items-center justify-content-center">
+                    <div class="p-3" style="max-width: 900px;">
+                        <h5 class="text-white text-uppercase mb-3 animated slideInDown">Giúp cơ thể khỏe mạnh</h5>
+                        <h1 class="display-1 text-white mb-md-4 animated zoomIn">Đem đến dịch vụ chăm sóc sức khỏe
+                            tốt nhất</h1>
+                         <a href="{% url 'about' %}" class="btn btn-primary py-md-3 px-md-5 me-3 animated slideInLeft">Giới thiệu</a>
+                        <a href="{% url 'service' %}" class="btn btn-secondary py-md-3 px-md-5 animated slideInRight">Liên hệ</a>
+                    </div>
+                </div>
+            </div>
+            <div class="carousel-item">
+                <img class="w-100" src="{% static 'img/banner2.png' %}" alt="Image">
+                <div class="carousel-caption d-flex flex-column align-items-center justify-content-center">
+                    <div class="p-3" style="max-width: 900px;">
+                        <h5 class="text-white text-uppercase mb-3 animated slideInDown">Giúp cơ thể khỏe mạnh</h5>
+                        <h1 class="display-1 text-white mb-md-4 animated zoomIn">Đem đến dịch vụ chăm sóc sức khỏe
+                            tốt nhất</h1>
+                        <a href="{% url 'about' %}" class="btn btn-primary py-md-3 px-md-5 me-3 animated slideInLeft">Giới thiệu</a>
+                        <a href="{% url 'service' %}" class="btn btn-secondary py-md-3 px-md-5 animated slideInRight">Liên hệ</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#header-carousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#header-carousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Next</span>
+        </button>
+    </div>
+</div>
+<!-- Carousel End -->
+
+<!-- About Start -->
+<div class="container-fluid py-5 wow fadeInUp" data-wow-delay="0.1s">
+    <div class="container">
+        <div class="row g-5">
+            <div class="col-lg-7">
+                <div class="section-title mb-4">
+                    <h5 class="position-relative d-inline-block text-primary text-uppercase">Thông tin về chúng tôi
+                    </h5>
+                    <h1 class="display-5 mb-0">Phòng khám bệnh tốt nhất mà bạn có thể tin tưởng</h1>
+                </div>
+
+                <p class="mb-4">Phòng khám Đa Khoa An Tâm là địa chỉ chăm sóc sức khỏe uy tín,
+                    hiện đại và thân thiện dành cho mọi gia đình.
+                    Với đội ngũ bác sĩ giàu kinh nghiệm, tận tâm cùng hệ thống trang thiết bị y tế tiên tiến,
+                    chúng tôi cam kết mang đến cho quý bệnh nhân dịch vụ khám chữa bệnh chất lượng cao, an toàn và
+                    hiệu quả.</p>
+                <div class="row g-3">
+                    <div class="col-sm-6 wow zoomIn" data-wow-delay="0.3s">
+                        <h5 class="mb-3"><i class="fa fa-check-circle text-primary me-3"></i>Phục vụ tận tình</h5>
+                        <h5 class="mb-3"><i class="fa fa-check-circle text-primary me-3"></i>Đội ngũ chuyên nghiệp
+                        </h5>
+                    </div>
+                    <div class="col-sm-6 wow zoomIn" data-wow-delay="0.6s">
+                        <h5 class="mb-3"><i class="fa fa-check-circle text-primary me-3"></i>24/7 Mở cửa</h5>
+                        <h5 class="mb-3"><i class="fa fa-check-circle text-primary me-3"></i>Giá cả hợp lý</h5>
+                    </div>
+                </div>
+                
+            </div>
+            <div class="col-lg-5" style="min-height: 500px;">
+                <div class="position-relative h-100">
+                    <img class="position-absolute w-100 h-100 rounded wow zoomIn" data-wow-delay="0.9s"
+                        src="{% static 'img/about.jpg' %}" style="object-fit: cover;">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- About End -->
+<!-- Service Start -->
+
+<!-- Team Start -->
+<div class="container-fluid py-5">
+    <div class="container">
+        <div class="row g-5">
+            <div class="col-lg-4 col-md-6 wow slideInUp" data-wow-delay="0.1s">
+                <div class="section-title bg-light rounded h-100 p-5">
+                    <h5 class="position-relative d-inline-block text-primary text-uppercase">Các bác sĩ</h5>
+                    <h1 class="display-6 mb-4 d-inline-block">Các bác sĩ có đầy đủ chứng chỉ và kinh nghiệm</h1>
+                </div>
+            </div>
+            {% for doctor in list_doctor %}
+            <div class="col-lg-4 col-md-6 wow slideInUp" data-wow-delay="0.2s">
+                <div onclick="window.location ='appointment/{{ doctor.user.username }}'"
+                    class="team-item bg-light rounded overflow-hidden">
+                    <div class="position-relative rounded-top" style="z-index: 1;">
+                        <!-- {% if doctor.user.avatar %} -->
+                        <img class="img-fluid rounded-top w-100" src="{{ doctor.user.avatar.url }}" alt="Ảnh bác sĩ"
+                            style="height: 300px; object-fit: cover;">
+                        <!-- {% else %}
+                        <img class="img-fluid rounded-top w-100" src="{% static 'img/team-1.jpg' %}" alt="Ảnh mặc định"
+                            style="height: 300px; object-fit: cover;"> -->
+                        <!-- {% endif %} -->
+
+                    </div>
+                    <div class="team-text position-relative bg-light text-center rounded-bottom p-4 pt-5">
+                        <h4 class="mb-2">Bác sĩ {{ doctor.user.first_name }} {{ doctor.user.last_name }}</h4>
+                        </h4>
+                        <p class="text-primary mb-0">{{ doctor.specialization }}</p>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <p class="text-center">Không có bác sĩ nào.</p>
+            </div>
+
+            {% endfor %}
+
+        </div>
+    </div>
+</div>
+
+{%endblock%}
+
+<!-- Back to Top -->
+<a href="#" class="btn btn-lg btn-primary btn-lg-square rounded back-to-top"><i class="bi bi-arrow-up"></i></a>
+
+
+
+</body>
+
+</html>

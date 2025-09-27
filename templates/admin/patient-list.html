@@ -1,0 +1,207 @@
+{% load static %}
+{% include "admin/dashboard.html" %}
+{% block content %}
+
+<div class="page-wrapper">
+	<div class="content container-fluid">
+		<div class="container py-4">
+			<div class="sticky-header text-center fade-in">
+				<h1 class="fw-bold mb-1" style="letter-spacing:1px;">📊 Thống kê các bệnh nhân</h1>
+				<p class="text-muted mb-0">Tổng quan lịch sử bệnh nhân của hệ thống.</p>
+			</div>
+		</div>
+
+		<!-- Page Header -->
+
+		<div class="chart-card mb-5 fade-in">
+			<h6 class="fw-bold mb-3">📋 Danh sách bệnh nhân</h6>
+			<div class="table-responsive">
+				<table class="datatable table table-hover align-middle table-center mb-0">
+					<thead class="table-light">
+						<tr>
+							<th class="text-center">STT</th>
+							<th style="width:60px;">Tên bệnh nhân</th>
+							<th class="text-center">Số lần tái khám</th>
+							<th class="text-center">SĐT </th>
+							<th class="text-center">Lần khám gần nhất</th>
+
+						</tr>
+					</thead>
+					<tbody>
+						{% for patient in admin_list_patient %}
+						<tr>
+							<td>{{ forloop.counter }}</td>
+							<td>
+								<h2 class="table-avatar">
+
+									<a>{{ patient.user__first_name }} {{ patient.user__last_name }}</a>
+								</h2>
+							</td>
+							<td>{{ patient.total }}</td>
+							<td>{{ patient.user__phone_number }}</td>
+							<td>
+								{% if patient.last_visit_date %}
+								{{ patient.last_visit_date|date:"d/m/Y" }}
+								{% else %}
+								Chưa có lần khám nào
+								{% endif %}
+							</td>
+						</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<h2>chọn ngày xem biểu đồ</h2>
+		<div class="row g-4">
+			<div class="d-flex mb-3">
+				<input type="date" id="startDate" class="form-control me-2">
+				<input type="date" id="endDate" class="form-control">
+				<button type="button" class="btn btn-primary" onclick="filterChart()">Lọc</button>
+				<button type="button" class="btn btn-primary" onclick="exportExcel()">Xuất file excel</button>
+			</div>
+			<!-- Biểu đồ cột: Lịch hẹn theo trạng thái -->
+			<div class="col-md-6">
+				<div class="card shadow-sm">
+					<div class="card-body">
+						<h5 class="card-title text-center">Tổng Số lượng bệnh nhân đặt lịch</h5>
+						<canvas id="patientChart"></canvas>
+					</div>
+				</div>
+			</div>
+
+			<!-- Biểu đồ tròn: Bệnh nhân mới / quay lại -->
+			<div class="col-md-6">
+				<div class="card shadow-sm">
+					<div class="card-body">
+						<h5 class="card-title text-center">Số lượng bệnh nhân mới vs quay lại</h5>
+						<canvas id="patientPieChart"></canvas>
+
+					</div>
+				</div>
+			</div>
+		</div>
+
+
+
+	</div>
+</div>
+<script>
+const chartData = JSON.parse('{{ admin_chart_data|safe }}');
+
+const today = new Date();
+const lastWeek = new Date();
+lastWeek.setDate(today.getDate() - 6);
+
+const getDateStr = (d) => d.toISOString().slice(0, 10);
+const filteredDays = [];
+for (let d = new Date(lastWeek); d <= today; d.setDate(d.getDate() + 1)) {
+	filteredDays.push(getDateStr(new Date(d)));
+}
+
+// ---- Line chart: bệnh nhân theo ngày ----
+const patient = filteredDays.map(d => {
+	const found = chartData.find(item => item.day === d);
+	return found ? found.patients : 0;
+});
+const ctx1 = document.getElementById('patientChart').getContext('2d');
+patientChart = new Chart(ctx1, {
+	type: 'line',
+	data: {
+		labels: filteredDays,
+		datasets: [{
+			label: 'Số lượng bệnh nhân',
+			data: patient,
+			backgroundColor: 'rgba(255, 206, 86, 0.3)',
+			borderColor: 'rgba(255, 206, 86, 1)',
+			fill: true
+		}]
+	},
+	options: { responsive: true }
+});
+
+// ---- Pie chart: bệnh nhân mới vs quay lại ----
+let totalNew = 0;
+let totalReturning = 0;
+chartData.forEach(item => {
+	totalNew += item.new_patients;
+	totalReturning += item.returning_patients;
+});
+
+const ctx2 = document.getElementById('patientPieChart').getContext('2d');
+new Chart(ctx2, {
+	type: 'pie',
+	data: {
+		labels: ['Bệnh nhân mới', 'Bệnh nhân quay lại'],
+		datasets: [{
+			data: [totalNew, totalReturning],
+			backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+			borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
+			borderWidth: 1
+		}]
+	},
+	options: {
+		responsive: true,
+		plugins: {
+			legend: {
+				position: 'bottom'
+			}
+		}
+	}
+});
+function filterChart() {
+	const startDate = document.getElementById('startDate').value;
+	const endDate = document.getElementById('endDate').value;
+	if (!startDate || !endDate) {
+		alert("Vui lòng chọn đầy đủ ngày bắt đầu và kết thúc");
+		return;
+	}
+
+	// --- Lọc dữ liệu theo khoảng ngày ---
+	const filteredData = chartData
+		.filter(item => item.day >= startDate && item.day <= endDate)
+		.sort((a, b) => a.day.localeCompare(b.day));
+
+	if (filteredData.length === 0) {
+		alert("Không có dữ liệu trong khoảng thời gian này");
+		return;
+	}
+
+	// --- Line chart (bệnh nhân theo ngày) ---
+	const labels = filteredData.map(item => item.day);
+	const totalPatients = filteredData.map(item => item.patients);
+
+	patientChart.data.labels = labels;
+	patientChart.data.datasets[0].data = totalPatients;
+	patientChart.update();
+
+	// --- Pie chart (bệnh nhân mới vs quay lại) ---
+	let totalNew = 0;
+	let totalReturning = 0;
+	filteredData.forEach(item => {
+		totalNew += item.new_patients;
+		totalReturning += item.returning_patients;
+	});
+
+	patientPieChart.data.datasets[0].data = [totalNew, totalReturning];
+	patientPieChart.update();
+}
+function exportExcel() {
+    const startDate = document.getElementById("startDate").value;
+    const endDate = document.getElementById("endDate").value;
+
+    let url = "/admin/admin-patient?export=1";
+    if (startDate && endDate) {
+        url += `&start=${startDate}&end=${endDate}`;
+    }
+
+    window.location.href = url;
+}
+
+
+
+	// const 
+</script>
+
+
+{%endblock%}

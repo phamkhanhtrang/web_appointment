@@ -1,0 +1,67 @@
+{% load static %}
+{% include "doctor/dashboard.html" %}
+{% block content %}
+
+<!-- Page Wrapper -->
+<div class="page-wrapper">
+	<div class="content container-fluid">
+
+		<!-- Page Header -->
+		<div class="page-header">
+			<div class="row">
+				<div class="col-sm-12">
+					<h3 class="page-title">Danh sách bệnh nhân</h3>
+
+				</div>
+			</div>
+		</div>
+		<!-- /Page Header -->
+
+		<div class="row">
+			<div class="col-sm-12">
+				<div class="card">
+					<div class="card-body">
+						<div class="table-responsive">
+							<div class="table-responsive">
+								<table class="datatable table table-hover table-center mb-0">
+									<thead>
+										<tr>
+											<th>Số thứ tự</th>
+											<th>Tên bệnh nhân</th>
+											<th>Số lần khám</th>
+											<th>Số điện thoại</th>
+											<!-- <th>Lần khám cuối</th> -->
+											<th class="text-right">Đã thanh toán</th>
+										</tr>
+									</thead>
+									<tbody>
+										{% for stat in patient_stats %}
+										<tr>
+											<td>{{ forloop.counter }}</td>
+											<td>
+												<h2 class="table-avatar">
+													<!-- <a href="profile.html" class="avatar avatar-sm mr-2"><img
+															class="avatar-img rounded-circle"
+															src="assets/img/patients/patient1.jpg" alt="User Image"></a> -->
+													<a>{{ stat.patient__user__first_name }} {{ stat.patient__user__last_name }}</a>
+												</h2>
+											</td>
+											<td>{{stat.total}}</td>
+											<td>{{stat.patient__user__phone_number}}</td>
+											<!-- <td>20 Oct 2019</td> -->
+											<td class="text-right">{{stat.total_price_vnd}}</td>
+										</tr>
+										{%endfor%}
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+	</div>
+</div>
+<!-- /Page Wrapper -->
+{%endblock%}

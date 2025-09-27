@@ -1,0 +1,109 @@
+{% load static %}
+{% load crispy_forms_tags %}
+{% load widget_tweaks %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    ...
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+
+<body class="account-page">
+
+    <div class="main-wrapper">
+        <div class="content">
+            <div class="container-fluid">
+                <div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+                    <div class="col-md-6 col-lg-5">
+                        <div class="card shadow-lg border-0">
+                            <div class="card-body p-5">
+
+                                <h3 class="text-center mb-4">Đăng ký</h3>
+
+                                {% if form.errors %}
+                                <div class="alert alert-danger">
+                                    <ul>
+                                        {% for field in form %}
+                                        {% for error in field.errors %}
+                                        <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                        {% endfor %}
+                                        {% endfor %}
+                                        {% for error in form.non_field_errors %}
+                                        <li>{{ error }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                {% endif %}
+
+                                <form method="POST" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    {{ form.username.label_tag }}
+                                    {{ form.username|add_class:"form-control mb-3" }}
+
+                                    {{ form.phone_number.label_tag }}
+                                    {{ form.phone_number|add_class:"form-control mb-3" }}
+
+                                    {{ form.email.label_tag }}
+                                    {{ form.email|add_class:"form-control mb-3" }}
+
+                                    {{ form.avatar.label_tag }}
+                                    {{ form.avatar|add_class:"form-control mb-3" }}
+
+                                    {{ form.user_config.label_tag }}
+                                    {{ form.user_config|add_class:"form-select mb-3" }}
+
+                                    <div id="doctor_fields" style="display: none;">
+                                        {{ form.speciality.label_tag }}
+                                        {{ form.speciality|add_class:"form-select mb-3" }}
+
+                                        {{ form.price.label_tag }}
+                                        {{ form.price|add_class:"form-control mb-3" }}
+                                    </div>
+
+                                    {{ form.password1.label_tag }}
+                                    {{ form.password1|add_class:"form-control mb-3" }}
+
+                                    {{ form.password2.label_tag }}
+                                    {{ form.password2|add_class:"form-control mb-3" }}
+
+                                    <button type="submit" class="btn btn-primary w-100">Đăng ký</button>
+                                </form>
+
+                                <div class="text-end mt-3">
+                                    <a href="{% url 'login' %}">Đã có tài khoản?</a>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="{% static 'js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'js/script.js' %}"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const userSelect = document.getElementById("id_user_config");
+            const doctorFields = document.getElementById("doctor_fields");
+
+            function toggleFields() {
+                if (userSelect.value === "Doctor") {
+                    doctorFields.style.display = "block";
+                } else {
+                    doctorFields.style.display = "none";
+                }
+            }
+
+            userSelect.addEventListener("change", toggleFields);
+            toggleFields();  // gọi khi load lần đầu
+        });
+    </script>
+</body>
+
+</html>

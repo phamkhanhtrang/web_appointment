@@ -102,7 +102,7 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "appointment_db",
-        "USER": "root",
+        "USER": "admin",
         "PASSWORD": "28042004",
         "HOST": "database-web.cfggo8wow92g.ap-southeast-2.rds.amazonaws.com",
         "PORT": "3306",

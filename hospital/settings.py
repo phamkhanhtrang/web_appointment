@@ -104,7 +104,7 @@ DATABASES = {
         "NAME": "appointment_db",
         "USER": "root",
         "PASSWORD": "28042004",
-        "HOST": "localhost",
+        "HOST": "database-web.cfggo8wow92g.ap-southeast-2.rds.amazonaws.com",
         "PORT": "3306",
     }
 }

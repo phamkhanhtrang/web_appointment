@@ -199,12 +199,12 @@ h6,
 }
 
 .hero-header {
-    background: linear-gradient(rgba(9, 30, 62, .85), rgba(9, 30, 62, .85)), url(../img/carousel-1.jpg) center center no-repeat;
+    background: linear-gradient(rgba(9, 30, 62, .85), rgba(9, 30, 62, .85)), url("../img/carousel-1.cfee9767f784.jpg") center center no-repeat;
     background-size: cover;
 }
 
 .bg-appointment {
-    background: linear-gradient(rgba(9, 30, 62, .85), rgba(9, 30, 62, .85)), url(../img/carousel-1.jpg) center center no-repeat;
+    background: linear-gradient(rgba(9, 30, 62, .85), rgba(9, 30, 62, .85)), url("../img/carousel-1.cfee9767f784.jpg") center center no-repeat;
     background-size: cover;
 }
 
@@ -244,7 +244,7 @@ h6,
 }
 
 .bg-offer {
-    background:url(../img/carousel-1.jpg) center center no-repeat;
+    background:url("../img/carousel-1.cfee9767f784.jpg") center center no-repeat;
     background-size: cover;
 }
 
@@ -289,7 +289,7 @@ h6,
 }
 
 .bg-testimonial {
-    background: url(../img/carousel-2.jpg) center center no-repeat;
+    background: url("../img/carousel-2.16ad8161974c.jpg") center center no-repeat;
     background-size: cover;
 }
 

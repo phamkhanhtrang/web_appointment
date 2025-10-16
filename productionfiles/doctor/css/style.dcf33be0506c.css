@@ -45,12 +45,12 @@ Version      : 1.0
 	font-family: 'Material Icons';
 	font-style: normal;
 	font-weight: 400;
-	src: url(../fonts/MaterialIcons-Regular.eot); /* For IE6-8 */
+	src: url("../fonts/MaterialIcons-Regular.e79bfd88537d.eot"); /* For IE6-8 */
 	src: local('Material Icons'),
 	local('MaterialIcons-Regular'),
-	url(../fonts/MaterialIcons-Regular.html) format('woff2'),
-	url(../fonts/MaterialIcons-Regular.woff) format('woff'),
-	url(../fonts/MaterialIcons-Regular.ttf) format('truetype');
+	url("../fonts/MaterialIcons-Regular.570eb83859dc.html") format('woff2'),
+	url("../fonts/MaterialIcons-Regular.012cf6a10129.woff") format('woff'),
+	url("../fonts/MaterialIcons-Regular.a37b0c01c0ba.ttf") format('truetype');
 }
 html {
 	height: 100%;

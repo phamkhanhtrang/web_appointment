@@ -83,7 +83,8 @@ def admin_appointment(request):
     admin_total_revenue = Appointment.objects.filter(status='completed').aggregate(total=Sum('price'))['total'] or 0
     admin_total_revenue_vnd = format_vnd(admin_total_revenue)
     
-    admin_list_appointment = Appointment.objects.order_by('-appointment_time')
+    admin_list_appointment = Appointment.objects.order_by('-appointment_time')[:10]
+
     
     start = request.GET.get("start")
     end = request.GET.get("end")

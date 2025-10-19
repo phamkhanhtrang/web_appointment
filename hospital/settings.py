@@ -104,6 +104,33 @@ WSGI_APPLICATION = "hospital.wsgi.application"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.mysql",
+#                 "OPTIONS": {
+#             "init_command": "SET sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'"
+#         },
+
+#         "NAME": os.getenv("DB_NAME"),
+#         "USER": os.getenv("DB_USER"),
+#         "PASSWORD": os.getenv("DB_PASSWORD"),
+#         "HOST": os.getenv("DB_HOST"),
+#         "PORT": os.getenv("DB_PORT", "3306"),
+#     }
+# }
+
+
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.mysql",
+#         "NAME": "appointment_db",
+#         "USER": "root",
+#         "PASSWORD": "28042004",
+#         "HOST": "localhost",
+#         "PORT": "3306",
+#     }
+# }
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
@@ -116,8 +143,22 @@ DATABASES = {
         "PASSWORD": os.getenv("DB_PASSWORD"),
         "HOST": os.getenv("DB_HOST"),
         "PORT": os.getenv("DB_PORT", "3306"),
-    }
+    },
+    'slave': {  # SLAVE
+        "ENGINE": "django.db.backends.mysql",
+                "OPTIONS": {
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'"
+        },
+        "NAME": os.getenv("DB_NAME_SLAVE"),
+        "USER": os.getenv("DB_USER_SLAVE"),
+        "PASSWORD": os.getenv("DB_PASSWORD_SLAVE"),
+        "HOST": os.getenv("DB_HOST_SLAVE"),
+        "PORT": os.getenv("DB_PORT_SLAVE", "3306"),
+    },
 }
+
+# Kích hoạt router
+DATABASE_ROUTERS = ['db_router.DatabaseRouter']
 
 
 

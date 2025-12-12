@@ -66,14 +66,14 @@ def admin_login(request):
     template = loader.get_template('admin/login.html')
     return HttpResponse(template.render({}, request))    
 def admin_appointment(request):
-    if request.method == "POST":
-        appointment_id = request.POST.get("appointment_id")
-        status = request.POST.get("status")
+    # if request.method == "POST":
+    #     appointment_id = request.POST.get("appointment_id")
+    #     status = request.POST.get("status")
 
-        if appointment_id and status:
-            appointment = Appointment.objects.get(id=appointment_id)
-            appointment.status = status   # ✅ dùng dấu chấm
-            appointment.save()
+    #     if appointment_id and status:
+    #         appointment = Appointment.objects.get(id=appointment_id)
+    #         appointment.status = status   # ✅ dùng dấu chấm
+    #         appointment.save()
             # 
     admin_total_appointments = Appointment.objects.count()
     expired_appointment = Appointment.objects.filter(

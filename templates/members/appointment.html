@@ -1,6 +1,90 @@
 {% extends "base.html" %}
 {% load static %}
 {% block content %}
+<!-- ...existing code... -->
+<style>
+    .date-container {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .date-card {
+        background: #fff;
+        border: 2px solid #0d6efd;
+        border-radius: 10px;
+        width: 70px;
+        text-align: center;
+        cursor: pointer;
+        transition: 0.2s;
+        padding: 10px 0;
+        font-weight: 500;
+        color: #0d6efd;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .date-card.selected,
+    .date-card:hover {
+        background: #0d6efd;
+        color: #fff;
+        border-color: #0d6efd;
+        transform: translateY(-3px) scale(1.05);
+    }
+
+    .date-card .day {
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .date-card .number {
+        font-size: 22px;
+        font-weight: bold;
+    }
+
+    .time-container {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .time-badge {
+        background: #fff;
+        border: 2px solid #198754;
+        color: #198754;
+        border-radius: 20px;
+        padding: 8px 18px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-bottom: 10px;
+        transition: 0.2s;
+        font-weight: 500;
+    }
+
+    .time-badge.selected,
+    .time-badge:hover {
+        background: #198754;
+        color: #fff;
+        border-color: #198754;
+        transform: scale(1.08);
+    }
+
+    .day-button.disabled {
+        background-color: #f5f5f5;
+        border-color: #ccc;
+        color: #999;
+        cursor: not-allowed;
+    }
+</style>
+
+<!-- ...existing code... -->
+
+<!-- ...existing code... -->
+
+<!-- ...existing code... -->
 
 <!-- Full Screen Search Start -->
 <div class="modal fade" id="searchModal" tabindex="-1">
@@ -37,15 +121,13 @@
                 <!-- Lựa chọn ngày -->
                 <!-- Chọn ngày -->
                 <div id="day-buttons" class="day-section">
-                    <h4 class="section-title">Chọn ngày và giờ</h4>
+                    <h4 class="section-title mb-3 text-primary fw-bold">Chọn ngày</h4>
                     <div class="date-container" id="dateContainer">
                         <!-- Ngày sẽ được render ở đây -->
                     </div>
                 </div>
-
-                <!-- Chọn giờ -->
                 <div id="time-buttons" class="time-section">
-                    <h2 class="section-title"></h2>
+                    <h4 class="section-title mb-3 text-success fw-bold">Chọn giờ</h4>
                     <div class="time-container" id="timeContainer">
                         <!-- Giờ sẽ được render ở đây -->
                     </div>
@@ -117,18 +199,108 @@
 </div>
 
 <!-- Appointment End -->
-
-
 <script>
-    // schedules lúc này đã là object hợp lệ, không cần JSON.parse
-    window.schedules = JSON.parse('{{ schedules|safe }}');
+    const dateContainer = document.getElementById('dateContainer');
+    const timeContainer = document.getElementById('timeContainer');
+
+    const schedules = JSON.parse('{{ schedules|safe }}');
+    const today = new Date();
+    let selectedTimeBtn = null;
+    let selectedDateBtn = null;
+
+    // ================== GET BOOKED TIMES ==================
+    function getBookedTimes(date) {
+        const dateStr = date.toISOString().split("T")[0];
+        const dayData = schedules.find(s => s.date === dateStr);
+        return dayData ? dayData.booked_times : [];
+    }
+
+    // ================== GENERATE 7 NEXT DAYS ==================
+    for (let i = 0; i < 7; i++) {
+        const date = new Date();
+        date.setDate(today.getDate() + i);
+
+        const dayStr = date.toISOString().split("T")[0];
+        const dayData = schedules.find(s => s.date === dayStr);
+
+        const status = dayData ? dayData.status : 'off'; // default nghỉ nếu không có schedule
+
+        const day = date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+        const number = date.getDate();
+
+        const btn = document.createElement('div');
+        btn.className = 'date day-button';
+        btn.innerHTML = `<div>${day}</div><div>${number}</div>`;
+        btn.dataset.date = date.toISOString();
+
+        if (status !== 'work') {
+            btn.classList.add('disabled'); // CSS gray / không click được
+        } else {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.day-button').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                showTimeSlots(date);
+            });
+        }
+
+        if (i === 0 && status === 'work') btn.classList.add('selected'); // mặc định chọn nếu là ngày làm
+        dateContainer.appendChild(btn);
+    }
+
+    // ================== SHOW TIME SLOTS ==================
+    function showTimeSlots(date) {
+        timeContainer.innerHTML = "";
+
+        const dayStr = date.toISOString().split("T")[0];
+        const dayData = schedules.find(s => s.date === dayStr);
+        if (!dayData || dayData.status !== 'work') return; // ngày nghỉ → không show slot
+        const booked = getBookedTimes(date);
+        const currentHour = today.getDate() === date.getDate() ? today.getHours() : 0;
+
+        let hasTime = false;
+        for (let hour = 8; hour <= 16; hour++) {
+            if (date.getDate() === today.getDate() && hour < currentHour) continue;
+
+            const display = new Date(date);
+            display.setHours(hour, 0);
+
+            const displayTime24 = display.toLocaleTimeString('en-US', {
+                hour: '2-digit', minute: '2-digit', hour12: false
+            }).slice(0, 5);
+
+            // ❌ Nếu giờ đã đặt → bỏ
+            if (booked.includes(displayTime24)) continue;
+
+            hasTime = true;
+            const time = document.createElement("div");
+            time.className = "time-badge";
+            time.textContent = display.toLocaleTimeString('vi-VN', {
+                hour: '2-digit', minute: '2-digit', hour12: true
+            });
+
+            time.addEventListener("click", () => {
+                if (selectedTimeBtn) selectedTimeBtn.classList.remove("selected");
+                time.classList.add("selected");
+                selectedTimeBtn = time;
+
+                const selectedDate = date.toLocaleDateString("vi-VN"); // dd/mm/yyyy
+
+                document.getElementById("appointment_time").value =
+                    `${displayTime24} - ${selectedDate}`;
+            });
+
+            timeContainer.appendChild(time);
+        }
+        if (!hasTime) {
+            timeContainer.innerHTML = '<span class="text-danger">Không còn khung giờ trống.</span>';
+        }
+    }
+
+    // Load mặc định hôm nay
+    showTimeSlots(today);
 </script>
 
-
 {%endblock%}
-
-
-
 
 <a href="#" class="btn btn-lg btn-primary btn-lg-square rounded back-to-top"><i class="bi bi-arrow-up"></i></a>
 

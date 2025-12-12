@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 
 # Base User Model
 class User(AbstractUser):
@@ -18,11 +19,18 @@ class User(AbstractUser):
     
     def __str__(self):
         return f"{self.username} ({self.role})"
+    
+class Specialty(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
+
 
 # Doctor info
 class Doctor(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='doctor_profile')
-    specialization = models.CharField(max_length=100)
+    specialties = models.ManyToManyField(Specialty, related_name='doctors')
     price = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
@@ -30,7 +38,7 @@ class Doctor(models.Model):
 
     def price_vnd(self):
         return f"{int(self.price):,}".replace(',', '.') + " VND"
-    
+
 
 class DoctorSchedule(models.Model):
     STATUS_CHOICES = (
@@ -56,22 +64,28 @@ class Patient(models.Model):
 
     def __str__(self):
         return self.user.get_full_name()
-
-# Appointment
+    
 class Appointment(models.Model):
-    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='appointments')
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='appointments')
+    doctor = models.ForeignKey(
+        Doctor, on_delete=models.CASCADE, related_name='appointments'
+    )
+    patient = models.ForeignKey(
+        Patient, on_delete=models.CASCADE, related_name='appointments'
+    )
+
+    # Không dùng DoctorSlot nữa
     appointment_time = models.DateTimeField()
     notes = models.TextField(blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    
-    STATUS_CHOICES=[
+    STATUS_CHOICES = [
         ('pending', 'Chờ xác nhận'),
         ('confirmed', 'Đã xác nhận'),
         ('completed', 'Hoàn thành'),
         ('cancelled', 'Đã hủy'),
     ]
-    status = models.CharField(max_length=20, choices = STATUS_CHOICES, default='pending')
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default='pending'
+    )
 
     PAYMENT_CHOICES = [
         ('cash', 'Tiền mặt'),
@@ -79,12 +93,16 @@ class Appointment(models.Model):
         ('momo', 'Momo'),
         ('insurance', 'Bảo hiểm')
     ]
-    payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default='cash')
-    
+    payment_method = models.CharField(
+        max_length=20, choices=PAYMENT_CHOICES, default='cash'
+    )
+
     def price_vnd(self):
-        return f"{int(self.price):,}".replace(',', '.') + " VND"
+        return f"{int(self.price):,}".replace(",", ".") + " VND"
+
     def __str__(self):
-        return f"{self.patient.user.username} hẹn với {self.doctor.user.username} lúc {self.appointment_time.strftime('%Y-%m-%d %H:%M')}"
+        return f"{self.patient.user.username} → {self.doctor.user.username} ({self.appointment_time.strftime('%Y-%m-%d %H:%M')})"
+
 
 class Prescription(models.Model):
     appointment = models.OneToOneField(Appointment, on_delete=models.CASCADE, related_name='prescription')

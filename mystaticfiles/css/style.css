@@ -36,13 +36,17 @@ h6,
 }
 
 .btn-primary:hover {
-    background: #4dabcd;      /* Your new hover color */
-    border-color: #4dabcd;    /* Your new hover border color */
+    background: #4dabcd;
+    /* Your new hover color */
+    border-color: #4dabcd;
+    /* Your new hover border color */
 }
 
 .btn-secondary:hover {
-    background: #c99a78;      /* Your new hover color */
-    border-color: #c99a78;    /* Your new hover border color */
+    background: #c99a78;
+    /* Your new hover color */
+    border-color: #c99a78;
+    /* Your new hover border color */
 }
 
 .btn-square {
@@ -119,6 +123,7 @@ h6,
 }
 
 @media (max-width: 991.98px) {
+
     .navbar-light .navbar-nav .nav-link,
     .sticky-top.navbar-light .navbar-nav .nav-link {
         padding: 10px 0;
@@ -162,13 +167,15 @@ h6,
         position: relative;
         margin-top: -90px;
         z-index: 1;
-     padding-top: 10px;
-    padding-bottom: 10px;
-       
+        padding-top: 10px;
+        padding-bottom: 10px;
+
     }
 }
+
 #header-carousel .carousel-item img {
-    height: 400px; /* Set to your desired height */
+    height: 400px;
+    /* Set to your desired height */
     object-fit: cover;
 }
 
@@ -231,7 +238,7 @@ h6,
     bottom: 0;
     left: 15px;
     right: 15px;
-    border-radius:100px / 15px;
+    border-radius: 100px / 15px;
     box-shadow: 0 0 15px rgba(0, 0, 0, .7);
     opacity: 0;
     transition: .5s;
@@ -244,7 +251,7 @@ h6,
 }
 
 .bg-offer {
-    background:url(../img/carousel-1.jpg) center center no-repeat;
+    background: url(../img/carousel-1.jpg) center center no-repeat;
     background-size: cover;
 }
 
@@ -339,8 +346,9 @@ h6,
     justify-content: center;
     flex-wrap: wrap;
     gap: 12px;
-  }
-  .day-button {
+}
+
+.day-button {
     padding: 10px 14px;
     border-radius: 8px;
     border: 1px solid #ccc;
@@ -349,14 +357,15 @@ h6,
     min-width: 100px;
     background: #fff;
     transition: all 0.2s;
-  }
-  .day-button.selected {
+}
+
+.day-button.selected {
     border: 2px solid #007bff;
     background: #eaf2ff;
     font-weight: 600;
-  }
+}
 
-  .time-container {
+.time-container {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 8px;
@@ -365,11 +374,13 @@ h6,
     max-width: 600px;
     margin: 0 auto;
 
-    max-height: 120px;   /* đúng 2 hàng */
+    max-height: 120px;
+    /* đúng 2 hàng */
     overflow-y: auto;
     overflow-x: hidden;
-  }
-  .time-button {
+}
+
+.time-button {
     padding: 8px 12px;
     border-radius: 6px;
     border: 1px solid #ccc;
@@ -379,51 +390,60 @@ h6,
     text-align: center;
     width: 100%;
     box-sizing: border-box;
-  }
-  .time-button.selected {
+}
+
+.time-button.selected {
     border: 2px solid #28a745;
     background: #e8f8ee;
     font-weight: 600;
-  }
+}
 
-   .card {
-      border-radius: 18px;
-      box-shadow: 0 8px 32px rgba(44,62,80,0.12);
-      border: none;
-    }
-    .card-body {
-      padding: 2.5rem;
-    }
-    .form-label {
-      font-weight: 600;
-      color: #1976d2;
-    }
-    .btn-primary {
-      background: linear-gradient(90deg, #1976d2 60%, #42a5f5 100%);
-      border: none;
-      font-weight: 600;
-      letter-spacing: 1px;
-    }
-    .btn-primary:hover {
-      background: linear-gradient(90deg, #1565c0 60%, #42a5f5 100%);
-    }
-    .logo {
-      width: 60px;
-      margin-bottom: 1rem;
-    }
-    .alert {
-      border-radius: 8px;
-      font-size: 1rem;
-    }
-     .back-link {
-      display: inline-block;
-      margin-top: 1.5rem;
-      color: #1976d2;
-      text-decoration: none;
-      font-weight: 500;
-      transition: color 0.2s;
-    }
-    .back-link:hover {
-      color: #1565c0;
-      text-decoration: underline;
-    }
+.card {
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(44, 62, 80, 0.12);
+    border: none;
+}
+
+.card-body {
+    padding: 2.5rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #1976d2;
+}
+
+.btn-primary {
+    background: linear-gradient(90deg, #1976d2 60%, #42a5f5 100%);
+    border: none;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(90deg, #1565c0 60%, #42a5f5 100%);
+}
+
+.logo {
+    width: 60px;
+    margin-bottom: 1rem;
+}
+
+.alert {
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.back-link {
+    display: inline-block;
+    margin-top: 1.5rem;
+    color: #1976d2;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.back-link:hover {
+    color: #1565c0;
+    text-decoration: underline;
+}

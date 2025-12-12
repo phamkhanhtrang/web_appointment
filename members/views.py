@@ -3,7 +3,7 @@ from datetime import datetime
 from django.contrib import messages
 from django.http import HttpResponse
 from django.template import loader
-from userauths.models import Doctor
+from userauths.models import Doctor, Specialty
 from userauths.models import Patient
 from userauths.models import Appointment,Appointment,DoctorSchedule,User
 from django.shortcuts import render, redirect,get_object_or_404
@@ -17,7 +17,7 @@ from django.core.mail import send_mail
 import json
 from django.utils.timezone import localtime
 from django.db import IntegrityError
-
+from django.http import HttpResponseRedirect
 
 
 # @role_required('patient')
@@ -30,8 +30,25 @@ def members(request):
      return HttpResponse(template.render(context, request))
 @role_required('patient')
 def about(request):
-    template = loader.get_template('members/about.html')  
-    return HttpResponse(template.render({}, request))
+    specialties = Specialty.objects.all()
+    specialty_id = request.GET.get('specialty')
+
+    if specialty_id:
+        doctors = Doctor.objects.select_related('user').filter(
+            specialties__id=specialty_id
+        ).distinct()
+    else:
+        doctors = Doctor.objects.select_related('user').all()
+
+    template = loader.get_template('members/about.html')
+
+    context = {
+        'specialties': specialties,
+        'list_doctor': doctors,
+        'selected_specialty_id': int(specialty_id) if specialty_id else None
+    }
+
+    return HttpResponse(template.render(context, request))
 @role_required('patient')
 def service(request):
     template = loader.get_template('members/service.html')  
@@ -103,75 +120,97 @@ def profile(request):
     return render(request, 'members/profile.html', context)
 
 
-def book_appointment_view(request, doctor_username):     
+def book_appointment(patient, doctor, specialty_id, appointment_time):
+    db_name = 'specialty1' if specialty_id == 1 else 'specialty2'
+    Appointment.objects.using(db_name).create(
+        doctor=doctor,
+        patient=patient,
+        appointment_time=appointment_time,
+        status='confirmed'
+    )
+
+    # Đồng bộ sang các khoa khác nếu bác sĩ làm nhiều khoa
+    for spec in doctor.specialties.exclude(id=specialty_id):
+        other_db = 'specialty1' if spec.id == 1 else 'specialty2'
+        DoctorSchedule.objects.using(other_db).update_or_create(
+            doctor=doctor,
+            date=appointment_time.date(),
+            defaults={'status': 'off'}
+        )
+
+def book_appointment_view(request, doctor_username):
     doctor = Doctor.objects.get(user__username=doctor_username)
+    specialty_id = int(request.GET.get("specialty"))  # convert sang int
+
     doctor_schedule = DoctorSchedule.objects.filter(doctor=doctor)
-    appointments = Appointment.objects.filter(doctor=doctor, status__in = ['completed', 'pending','confirmed'] )
-    
+
+    # Lấy danh sách appointment đã đặt
+    appointments = Appointment.objects.filter(
+        doctor=doctor,
+        status__in=['pending', 'confirmed', 'completed']
+    )
+
     patient = request.user.patient_profile
 
-    if request.method == 'POST':
-        appointment_time_str = request.POST.get('appointment_time')
+    if request.method == "POST":
+        appointment_time_str = request.POST.get("appointment_time")
+
         try:
-            # Giả sử format bạn dùng là "HH:MM - dd/mm/yyyy"
             appointment_time = datetime.strptime(appointment_time_str, "%H:%M - %d/%m/%Y")
-        except (ValueError, TypeError):
-            messages.error(request, 'Thời gian đặt lịch không hợp lệ.')
-            return redirect('appointment', doctor_username=doctor_username)
+        except:
+            messages.error(request, "Thời gian đặt lịch không hợp lệ.")
+            return redirect(f"/appointment/{doctor_username}?specialty={specialty_id}")
 
-        notes = request.POST.get('notes', '')
-        payment_method = request.POST.get('payment_method')
-
-        # Tạo lịch hẹn
-        appointment = Appointment.objects.create(
-            doctor=doctor,
+        # --- Gọi hàm book_appointment thay cho Appointment.objects.create ---
+        book_appointment(
             patient=patient,
-            appointment_time=appointment_time,
-            notes=notes,
-            price=doctor.price,
-            payment_method=payment_method       
-        )        
-        if payment_method == "momo":
-           return redirect('payment-complete', appointment_id=appointment.id)
-             
-    #     subject = f'Thông tin thanh toán lịch hẹn #{appointment.id}'
-    #     message = render_to_string('members/payment_success.html', {
-    #     'appointment': appointment,
-    #     'doctor': appointment.doctor,
-    #     'patient': appointment.patient,
-    # })
-    #     recipient_list = [appointment.patient.user.email]
-    #     send_mail(
-    #     subject,
-    #     message,
-    #     None,  # sẽ dùng DEFAULT_FROM_EMAIL
-    #     recipient_list,
-    #     fail_silently=False,
-    # ) 
+            doctor=doctor,
+            specialty_id=specialty_id,
+            appointment_time=appointment_time
+        )
 
-        messages.success(request, 'Đặt lịch thành công!')
-        
-        return redirect('appointment', doctor_username=doctor_username)
+        # Nếu phương thức thanh toán là Momo
+        if request.POST.get("payment_method") == "momo":
+            # Lấy appointment mới vừa tạo để redirect
+            # Bạn có thể trả về appointment mới từ book_appointment hoặc query lại
+            latest_appointment = Appointment.objects.filter(
+                doctor=doctor,
+                patient=patient,
+                appointment_time=appointment_time
+            ).last()
+            return redirect("payment-complete", appointment_id=latest_appointment.id)
 
+        messages.success(request, "Đặt lịch thành công!")
+        url = reverse('appointment', kwargs={'doctor_username': doctor_username})
+        url += f'?specialty={specialty_id}'
+        return HttpResponseRedirect(url)
+
+    # Convert các lịch hẹn sang dạng { "2025-01-01": ["08:00", "09:00"] }
     booked_times = {}
-    for a in appointments: 
-        local_dt = localtime(a.appointment_time)  # đổi về giờ local
-        date_str = local_dt.strftime("%Y-%m-%d")
-        time_str = local_dt.strftime("%H:%M")
-        booked_times.setdefault(date_str, []).append(time_str)
-    data = []
-    for s in doctor_schedule:
-        data.append({
+    for a in appointments:
+        dt = localtime(a.appointment_time)
+        date_key = dt.strftime("%Y-%m-%d")
+        time_key = dt.strftime("%H:%M")
+        booked_times.setdefault(date_key, []).append(time_key)
+
+    # Chuẩn hóa schedule gửi xuống JS
+    data = [
+        {
             "date": s.date.strftime("%Y-%m-%d"),
             "status": s.status,
-            "booked_times": booked_times.get(s.date.strftime("%Y-%m-%d"), []),
-        })
-    
-    return render(request, 'members/appointment.html', {
-        'doctor_name': doctor,
-        'user': request.user,
-        'schedules': json.dumps(data), 
+            "booked_times": booked_times.get(s.date.strftime("%Y-%m-%d"), [])
+        }
+        for s in doctor_schedule
+    ]
+
+    return render(request, "members/appointment.html", {
+        "doctor_name": doctor,
+        "user": request.user,
+        "schedules": json.dumps(data),
+        "doctor_specialties": doctor.specialties.all(),
+        "selected_specialty_id": specialty_id,
     })
+
 
 def payment_complete_view(request, appointment_id):
     appointment = get_object_or_404(Appointment, id=appointment_id)

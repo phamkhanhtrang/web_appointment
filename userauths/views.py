@@ -4,7 +4,7 @@ from django.conf import settings
 from userauths.forms import UserRegisterForm
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages  
-from .models import Patient
+from .models import Patient, Specialty
 from .models import Doctor
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
@@ -36,29 +36,42 @@ def register_view(request):
         form = UserRegisterForm(request.POST, request.FILES)
         if form.is_valid():
             user = form.save(commit=False)
+
+            # Xác định role
             user_config = form.cleaned_data.get('user_config')
-            if user_config == 'Doctor':
-                user.role = 'doctor'
-            else:
-                user.role = 'patient'
+            user.role = 'doctor' if user_config == 'Doctor' else 'patient'
+
+            # Avatar
             user.avatar = form.cleaned_data.get('avatar')
             user.save()
 
+            # Nếu là bác sĩ
             if user.role == 'doctor':
-                Doctor.objects.create(
+                doctor = Doctor.objects.create(
                     user=user,
-                    specialization=form.cleaned_data.get('speciality'),
                     price=form.cleaned_data.get('price')
                 )
+
+                # Lấy danh sách các chuyên khoa được chọn
+                specialties = form.cleaned_data.get('speciality')  # list
+
+                # Lưu vào bảng Specialty và liên kết ManyToMany
+                for s in specialties:
+                    specialty_obj, created = Specialty.objects.get_or_create(name=s)
+                    doctor.specialties.add(specialty_obj)
+
+            # Nếu là bệnh nhân
             else:
                 Patient.objects.create(
                     user=user,
-                    phone_number=form.cleaned_data.get('phone_number')  # nếu bạn muốn lưu riêng
+                    phone_number=form.cleaned_data.get('phone_number')
                 )
 
             return redirect('/login')
+
     else:
         form = UserRegisterForm()
+
     return render(request, 'userauths/register.html', {'form': form})
 
 def login_view(request):

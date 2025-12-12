@@ -59,7 +59,7 @@
 							<td><span class="fw-bold">{{ appointment.patient.user.get_full_name}}</span></td>
 							<td class="text-center">{{ appointment.appointment_time| date:"H:i d/m/y" }}</td>
 							<td>
-								<div class="status-toggle">
+								<!-- <div class="status-toggle">
 									<form method="post">
 										{% csrf_token %}
 										<input type="hidden" name="appointment_id" value="{{ appointment.id }}">
@@ -71,7 +71,7 @@
 
 										</select>
 									</form>
-								</div>
+								</div> -->
 							</td>
 							<td class="text-right">{{appointment.price_vnd}}
 							</td>

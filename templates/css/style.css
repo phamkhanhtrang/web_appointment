@@ -330,25 +330,72 @@ h6,
     width: 120px;
     height: 120px;
 }
-.date-container, .time-container {
-      display: flex;
-      overflow-x: auto;
-      margin-bottom: 20px;
-    }
-    .date, .time {
-      padding: 10px 15px;
-      border: 1px solid #ccc;
-      border-radius: 20px;
-      margin-right: 10px;
-      cursor: pointer;
-      text-align: center;
-      min-width: 70px;
-    }
-    .selected {
-      background-color: #3b82f6;
-      color: white;
-      border-color: #3b82f6;
-    }
-    .hidden {
-      display: none;
-    }
+/* ====== CONTAINER ====== */
+.date-container,
+.time-container {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    margin-bottom: 20px;
+    padding-bottom: 5px;
+    scrollbar-width: thin;
+}
+
+/* Scrollbar đẹp */
+.date-container::-webkit-scrollbar,
+.time-container::-webkit-scrollbar {
+    height: 6px;
+}
+.date-container::-webkit-scrollbar-thumb,
+.time-container::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 10px;
+}
+
+/* ====== DATE ITEM ====== */
+.date {
+    min-width: 70px;
+    padding: 10px 15px;
+    border: 1px solid #ccc;
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: center;
+    background: #fff;
+    transition: all 0.2s ease;
+}
+.date div:first-child {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+}
+.date div:last-child {
+    font-size: 18px;
+    font-weight: bold;
+    margin-top: 2px;
+}
+
+/* ====== TIME ITEM ====== */
+.time {
+    min-width: 90px;
+    padding: 10px 15px;
+    text-align: center;
+    border-radius: 12px;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    background: #fff;
+    transition: 0.2s;
+    font-weight: 500;
+}
+
+/* ====== SELECTED STYLE ====== */
+.selected {
+    background-color: #3b82f6 !important;
+    color: white !important;
+    border-color: #3b82f6 !important;
+    font-weight: bold;
+}
+
+/* Ẩn element */
+.hidden {
+    display: none;
+}

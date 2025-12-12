@@ -26,60 +26,69 @@
 <div class="container-fluid bg-primary py-5 hero-header mb-5">
     <div class="row py-3">
         <div class="col-12 text-center">
-            <h1 class="display-3 text-white animated zoomIn">Thông tin về chúng tôi</h1>
+            <h1 class="display-3 text-white animated zoomIn">Đặt lịch hẹn theo chuyên khoa</h1>
         </div>
     </div>
 </div>
 <!-- Hero End -->
 
-
 <!-- About Start -->
-<div class="container-fluid py-5 wow fadeInUp" data-wow-delay="0.1s">
+<div class="container-fluid py-5">
     <div class="container">
         <div class="row g-5">
-            <div class="col-lg-7">
-                <div class="section-title mb-4">
-                    <h5 class="position-relative d-inline-block text-primary text-uppercase">Thông tin về chúng tôi
-                    </h5>
-                    <h1 class="display-5 mb-0">Phòng khám bệnh tốt nhất mà bạn có thể tin tưởng</h1>
+            <!-- Sidebar chuyên khoa -->
+            <div class="col-lg-3 col-md-4">
+                <div class="bg-light rounded p-4 mb-4">
+                    <h5 class="text-primary text-uppercase mb-3">Chuyên khoa</h5>
+                    <ul class="list-group list-group-flush">
+                        {% for specialty in specialties %}
+                        <li class="list-group-item {% if selected_specialty_id == specialty.id %}active{% endif %}">
+                            <a href="?specialty={{ specialty.id }}"
+                                class="text-decoration-none {% if selected_specialty_id == specialty.id %}text-white{% else %}text-dark{% endif %}">
+                                {{ specialty.name }}
+                            </a>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item">Không có chuyên khoa nào.</li>
+                        {% endfor %}
+                        {% if selected_specialty_id %}
+                        <li class="list-group-item">
+                            <a href="?" class="text-decoration-none text-dark">Tất cả chuyên khoa</a>
+                        </li>
+                        {% endif %}
+                    </ul>
                 </div>
-
-                <p class="mb-4">Chào mừng bạn đến với phòng khám Smile,
-                    đối tác đáng tin cậy giúp bạn quản lý nhu cầu chăm sóc sức khỏe
-                    một cách thuận tiện và hiệu quả. Tại Prescripto, chúng tôi thấu hiểu
-                    những thách thức mà mọi người gặp phải khi đặt lịch hẹn khám bệnh và quản lý hồ sơ sức khỏe.
-                    <br>
-                    <br>
-                    Smile cam kết mang đến sự xuất sắc trong công nghệ chăm sóc sức khỏe. Chúng tôi không ngừng nỗ lực
-                    cải tiến nền tảng, tích hợp những tiến bộ mới nhất để nâng cao trải nghiệm người dùng và cung cấp
-                    dịch vụ vượt trội. Dù bạn đang đặt lịch hẹn khám đầu tiên hay quản lý việc chăm sóc sức khỏe liên
-                    tục, Prescripto luôn sẵn sàng hỗ trợ bạn trong từng bước.
-                    <br>
-                    <br>
-                    <b>Tầm nhìn của chúng tôi</b>
-                    <br>
-                    Tầm nhìn của chúng tôi tại Prescripto là tạo ra trải nghiệm chăm sóc sức khỏe liền mạch cho mọi
-                    người dùng. Chúng tôi mong muốn thu hẹp khoảng cách giữa bệnh nhân và nhà cung cấp dịch vụ chăm sóc
-                    sức khỏe, giúp bạn dễ dàng tiếp cận dịch vụ chăm sóc cần thiết, bất cứ khi nào bạn cần.
-                </p>
-                <div class="row g-3">
-                    <h1 class="display-10 mb-0"><b>Tại sao nên chọn phòng khám smile</b></h1>
-                    <div class="col-sm-6 wow zoomIn" data-wow-delay="0.3s">
-                        <h5 class="mb-3"><i class="fa fa-check-circle text-primary me-3"></i>Phục vụ tận tình</h5>
-                        <h5 class="mb-3"><i class="fa fa-check-circle text-primary me-3"></i>Đội ngũ chuyên nghiệp
-                        </h5>
-                    </div>
-                    <div class="col-sm-6 wow zoomIn" data-wow-delay="0.6s">
-                        <h5 class="mb-3"><i class="fa fa-check-circle text-primary me-3"></i>24/7 Mở cửa</h5>
-                        <h5 class="mb-3"><i class="fa fa-check-circle text-primary me-3"></i>Giá cả hợp lý</h5>
-                    </div>
-                </div>
-
             </div>
-            <div class="col-lg-5" style="min-height: 500px;">
-                <div class="position-relative h-100">
-                    <img class="position-absolute w-100 h-100 rounded wow zoomIn" data-wow-delay="0.9s"
-                        src="{% static 'img/about_image.png' %}" style="object-fit: cover;">
+            <!-- Nội dung chính: danh sách bác sĩ -->
+            <div class="col-lg-9 col-md-8">
+                <div class="row g-5">
+                    {% for doctor in list_doctor %}
+                    <div class="col-lg-4 col-md-6 wow slideInUp" data-wow-delay="0.2s">
+    <div onclick="window.location='appointment/{{ doctor.user.username }}?specialty={{ selected_specialty_id }}'"
+                            class="team-item bg-light rounded overflow-hidden">
+                            <div class="position-relative rounded-top" style="z-index: 1;">
+                                <!-- {% if doctor.user.avatar %} -->
+                                <img class="img-fluid rounded-top w-100" src="{{ doctor.user.avatar.url }}"
+                                    alt="Ảnh bác sĩ" style="height: 300px; object-fit: cover;">
+                                <!-- {% else %}
+                                            <img class="img-fluid rounded-top w-100" src="{% static 'img/team-1.jpg' %}" alt="Ảnh mặc định"
+                                                style="height: 300px; object-fit: cover;"> -->
+                                <!-- {% endif %} -->
+
+                            </div>
+                            <div class="team-text position-relative bg-light text-center rounded-bottom p-4 pt-5">
+                                <h4 class="mb-2">Bác sĩ {{ doctor.user.first_name }} {{ doctor.user.last_name }}</h4>
+                                </h4>
+                                <p class="text-primary mb-0">{{ doctor.specialization }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12">
+                        <p class="text-center">Không có bác sĩ nào.</p>
+                    </div>
+
+                    {% endfor %}
                 </div>
             </div>
         </div>

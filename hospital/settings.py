@@ -144,17 +144,29 @@ DATABASES = {
         "HOST": os.getenv("DB_HOST"),
         "PORT": os.getenv("DB_PORT", "3306"),
     },
-    'slave': {  # SLAVE
-        "ENGINE": "django.db.backends.mysql",
-                "OPTIONS": {
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'"
+        'specialty1': {  # SLAVE
+            "ENGINE": "django.db.backends.mysql",
+                    "OPTIONS": {
+                "init_command": "SET sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'"
+            },
+            "NAME": os.getenv("DB_NAME_SPECIALTY1"),
+            "USER": os.getenv("DB_USER_SPECIALTY1"),
+            "PASSWORD": os.getenv("DB_PASSWORD_SPECIALTY1"),
+            "HOST": os.getenv("DB_HOST_SPECIALTY1"),
+            "PORT": os.getenv("DB_PORT_SPECIALTY1", "3306"),
         },
-        "NAME": os.getenv("DB_NAME_SLAVE"),
-        "USER": os.getenv("DB_USER_SLAVE"),
-        "PASSWORD": os.getenv("DB_PASSWORD_SLAVE"),
-        "HOST": os.getenv("DB_HOST_SLAVE"),
-        "PORT": os.getenv("DB_PORT_SLAVE", "3306"),
-    },
+            'specialty2': {  # SLAVE
+            "ENGINE": "django.db.backends.mysql",
+                    "OPTIONS": {
+                "init_command": "SET sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'"
+            },
+            "NAME": os.getenv("DB_NAME_SPECIALTY2"),
+            "USER": os.getenv("DB_USER_SPECIALTY2"),
+            "PASSWORD": os.getenv("DB_PASSWORD_SPECIALTY2"),
+            "HOST": os.getenv("DB_HOST_SPECIALTY2"),
+            "PORT": os.getenv("DB_PORT_SPECIALTY2", "3306"),
+        },
+    
 }
 
 # Kích hoạt router
@@ -197,7 +209,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'trangpk.22it@vku.udn.vn'
-EMAIL_HOST_PASSWORD = 'mchg dbgv bouv enxt'
+EMAIL_HOST_PASSWORD = 'zatm xsws mvkh glxj'
 DEFAULT_FROM_EMAIL = 'trangpk.22it@vku.udn.vn'
 
 

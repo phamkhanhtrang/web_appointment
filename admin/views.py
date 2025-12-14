@@ -370,7 +370,7 @@ def admin_calendar(request, doctor_username):
     end_date = parse_date(end) if end else None
 
     status_stats = (
-        Appointment.objects.filter(doctor=doctor)
+        Appointment.objects.filter(doctor_id=doctor.id)
         .annotate(day=TruncDay('appointment_time'))
         .values('status', 'day')
         .annotate(count=Count('id'))

@@ -159,20 +159,24 @@ def admin_appointment(request):
     template = loader.get_template('admin/appointment-list.html')
     return HttpResponse(template.render( context, request))
 def admin_doctor(request):
+    from collections import defaultdict
+
     # ===== Doctor (default DB) =====
     admin_total_doctors = Doctor.objects.using('default').count()
 
     # ===== Appointment từ 2 DB =====
-    qs1 = Appointment.objects.using('specialty1').all()
-    qs2 = Appointment.objects.using('specialty2').all()
+    all_appointments = []
 
-    all_appointments = list(qs1) + list(qs2)
+    for db_name in ['specialty1', 'specialty2']:
+        appointments = Appointment.objects.using(db_name).all()
+        for a in appointments:
+            a._state.db = db_name  # giữ DB info cho router
+        all_appointments.extend(appointments)
+
     admin_total_appointments = len(all_appointments)
 
     # ===== Group theo doctor + day =====
-    from collections import defaultdict
     daily_map = defaultdict(int)
-
     for a in all_appointments:
         day = a.appointment_time.date()
         daily_map[(a.doctor_id, day)] += 1
@@ -188,7 +192,6 @@ def admin_doctor(request):
         doctor = doctor_map.get(doctor_id)
         if not doctor:
             continue
-
         admin_chart_data.append({
             'day': day.strftime('%Y-%m-%d'),
             'appointments': total,

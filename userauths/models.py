@@ -92,7 +92,7 @@ class Appointment(models.Model):
     payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default='cash')
 
     class Meta:
-        db_table = 'appointment'
+        db_table = 'userauths_appointment'
         
 
 class Prescription(models.Model):

@@ -165,7 +165,6 @@ DATABASES = {
             "HOST": os.getenv("DB_HOST_SPECIALTY2"),
             "PORT": os.getenv("DB_PORT_SPECIALTY2", "3306"),
         },
-    
 }
 
 # Kích hoạt router

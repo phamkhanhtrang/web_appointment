@@ -66,17 +66,14 @@ class Patient(models.Model):
         return self.user.get_full_name()
     
 class Appointment(models.Model):
-    doctor = models.ForeignKey(
-        Doctor, on_delete=models.CASCADE, related_name='appointments'
-    )
-    patient = models.ForeignKey(
-        Patient, on_delete=models.CASCADE, related_name='appointments'
-    )
+    doctor_id = models.IntegerField()
+    patient_id = models.IntegerField()
 
-    # Không dùng DoctorSlot nữa
     appointment_time = models.DateTimeField()
     notes = models.TextField(blank=True, null=True)
+
     price = models.DecimalField(max_digits=10, decimal_places=2)
+
     STATUS_CHOICES = [
         ('pending', 'Chờ xác nhận'),
         ('confirmed', 'Đã xác nhận'),
@@ -100,9 +97,24 @@ class Appointment(models.Model):
     def price_vnd(self):
         return f"{int(self.price):,}".replace(",", ".") + " VND"
 
-    def __str__(self):
-        return f"{self.patient.user.username} → {self.doctor.user.username} ({self.appointment_time.strftime('%Y-%m-%d %H:%M')})"
+    class Meta:
+        db_table = 'appointment'
+        
+def enrich_appointments(appointments):
+    doctor_ids = set(a.doctor_id for a in appointments)
+    patient_ids = set(a.patient_id for a in appointments)
 
+    doctors = Doctor.objects.filter(id__in=doctor_ids)
+    patients = Patient.objects.filter(id__in=patient_ids)
+
+    doctor_map = {d.id: d for d in doctors}
+    patient_map = {p.id: p for p in patients}
+
+    for a in appointments:
+        a.doctor = doctor_map.get(a.doctor_id)
+        a.patient = patient_map.get(a.patient_id)
+
+    return appointments
 
 class Prescription(models.Model):
     appointment = models.OneToOneField(Appointment, on_delete=models.CASCADE, related_name='prescription')

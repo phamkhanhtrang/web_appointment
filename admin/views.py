@@ -159,42 +159,65 @@ def admin_appointment(request):
     template = loader.get_template('admin/appointment-list.html')
     return HttpResponse(template.render( context, request))
 def admin_doctor(request):
-    admin_total_doctors = Doctor.objects.count()
-    admin_total_appointments = Appointment.objects.count()
+    # ===== Tổng bác sĩ (DB common) =====
+    admin_total_doctors = Doctor.objects.using('default').count()
 
-    doctor_daily_stats = Appointment.objects.annotate(day=TruncDay('appointment_time')) \
-            .values('doctor_id', 'doctor__user__first_name', 'doctor__user__last_name','day') \
-            .annotate(admin_total_appointments=Count('id')) \
-            .order_by('doctor_id', 'day')
-            
-    admin_chart_data = [
-            {
-                'day': stat['day'].strftime('%Y-%m-%d'),
-                'appointments': stat['admin_total_appointments'],
-                'doctor': f"{stat['doctor__user__first_name']} {stat['doctor__user__last_name']}",
-                # 'revenue': float(stat['admin_total_revenue']) if stat['admin_total_revenue'] else 0
-            }
-            for stat in doctor_daily_stats
-        ]
-    try:
-        # Nhóm theo bệnh nhân và đếm số lần đặt lịch
-        admin_list_doctor = Doctor.objects.all()\
-            .annotate(total=Count('id')  
-                      )\
-            .order_by('-total')
-        # appointments = Appointment.objects.filter(doctor=doctor).order_by('-appointment_time')
-        # Danh sách tất cả các lịch hẹn (để hiển thị chi tiết nếu cần)
-    except Doctor.DoesNotExist:
-        admin_list_doctor = []
-        
+    # ===== Appointment từ tất cả DB =====
+    qs1 = Appointment.objects.using('specialty1').all()
+    qs2 = Appointment.objects.using('specialty2').all()
+
+    all_appointments = list(qs1) + list(qs2)
+    admin_total_appointments = len(all_appointments)
+
+    # ===== Group theo doctor + day =====
+    daily_map = defaultdict(int)
+
+    for a in all_appointments:
+        day = a.appointment_time.date()
+        daily_map[(a.doctor_id, day)] += 1
+
+    # ===== Lấy doctor info =====
+    doctor_ids = {a.doctor_id for a in all_appointments}
+    doctors = Doctor.objects.using('default').filter(id__in=doctor_ids)
+    doctor_map = {d.id: d for d in doctors}
+
+    # ===== Dữ liệu chart (GIỐNG code cũ) =====
+    admin_chart_data = []
+
+    for (doctor_id, day), total in daily_map.items():
+        doctor = doctor_map.get(doctor_id)
+        if not doctor:
+            continue
+
+        admin_chart_data.append({
+            'day': day.strftime('%Y-%m-%d'),
+            'appointments': total,
+            'doctor': f"{doctor.user.first_name} {doctor.user.last_name}",
+        })
+
+    # ===== Danh sách doctor + tổng appointment =====
+    doctor_total_map = defaultdict(int)
+    for a in all_appointments:
+        doctor_total_map[a.doctor_id] += 1
+
+    admin_list_doctor = Doctor.objects.using('default').all()
+    for d in admin_list_doctor:
+        d.total = doctor_total_map.get(d.id, 0)
+
+    admin_list_doctor = sorted(
+        admin_list_doctor,
+        key=lambda d: d.total,
+        reverse=True
+    )
+
     context = {
-         'admin_list_doctor': admin_list_doctor,
-         'admin_total_doctors': admin_total_doctors,
-         'admin_total_appointments': admin_total_appointments,
-         'admin_chart_data': json.dumps(admin_chart_data),
+        'admin_list_doctor': admin_list_doctor,
+        'admin_total_doctors': admin_total_doctors,
+        'admin_total_appointments': admin_total_appointments,
+        'admin_chart_data': json.dumps(admin_chart_data),
     }
-    template = loader.get_template('admin/doctor-list.html')
-    return HttpResponse(template.render(context, request))
+
+    return render(request, 'admin/doctor-list.html', context)
 
 
 def admin_patient(request):

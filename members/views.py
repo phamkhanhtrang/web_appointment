@@ -179,7 +179,7 @@ def book_appointment_view(request, doctor_username):
             )
 
         messages.success(request, "Đặt lịch thành công!")
-        return redirect(f"/appointment/{doctor_username}?specialty={specialty_id}")
+        return redirect(f"/about/appointment/{doctor_username}?specialty={specialty_id}")
 
     # Tạo dict để biết giờ nào đã được đặt
     booked_times = {}

@@ -111,7 +111,7 @@ def profile(request):
         return redirect('profile')
         
     try:       
-        appointments = Appointment.objects.filter(patient=patient.id).order_by('-appointment_time')
+        appointments = Appointment.objects.filter(patient_id=patient.id).order_by('-appointment_time')
     except Patient.DoesNotExist:
         appointments = []
     

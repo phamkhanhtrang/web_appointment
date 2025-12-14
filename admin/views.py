@@ -159,10 +159,10 @@ def admin_appointment(request):
     template = loader.get_template('admin/appointment-list.html')
     return HttpResponse(template.render( context, request))
 def admin_doctor(request):
-    # ===== Tổng bác sĩ (DB common) =====
+    # ===== Doctor (default DB) =====
     admin_total_doctors = Doctor.objects.using('default').count()
 
-    # ===== Appointment từ tất cả DB =====
+    # ===== Appointment từ 2 DB =====
     qs1 = Appointment.objects.using('specialty1').all()
     qs2 = Appointment.objects.using('specialty2').all()
 
@@ -170,20 +170,20 @@ def admin_doctor(request):
     admin_total_appointments = len(all_appointments)
 
     # ===== Group theo doctor + day =====
+    from collections import defaultdict
     daily_map = defaultdict(int)
 
     for a in all_appointments:
         day = a.appointment_time.date()
         daily_map[(a.doctor_id, day)] += 1
 
-    # ===== Lấy doctor info =====
+    # ===== Doctor info =====
     doctor_ids = {a.doctor_id for a in all_appointments}
     doctors = Doctor.objects.using('default').filter(id__in=doctor_ids)
     doctor_map = {d.id: d for d in doctors}
 
-    # ===== Dữ liệu chart (GIỐNG code cũ) =====
+    # ===== Chart data =====
     admin_chart_data = []
-
     for (doctor_id, day), total in daily_map.items():
         doctor = doctor_map.get(doctor_id)
         if not doctor:
@@ -195,7 +195,7 @@ def admin_doctor(request):
             'doctor': f"{doctor.user.first_name} {doctor.user.last_name}",
         })
 
-    # ===== Danh sách doctor + tổng appointment =====
+    # ===== Doctor list + total appointment =====
     doctor_total_map = defaultdict(int)
     for a in all_appointments:
         doctor_total_map[a.doctor_id] += 1
@@ -218,7 +218,6 @@ def admin_doctor(request):
     }
 
     return render(request, 'admin/doctor-list.html', context)
-
 
 def admin_patient(request):
     # --- Lấy dữ liệu filter ---

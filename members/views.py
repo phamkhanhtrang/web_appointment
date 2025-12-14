@@ -1,5 +1,6 @@
 # members/views.py
 from datetime import datetime
+import re
 from django.contrib import messages
 from django.http import HttpResponse
 from django.template import loader
@@ -119,7 +120,7 @@ def profile(request):
                'patient': patient }
     return render(request, 'members/profile.html', context)
 
-def book_appointment(patient, doctor, specialty_id, appointment_time):
+def book_appointment(patient, doctor, specialty_id, appointment_time, price):
     db_name = 'specialty1' if specialty_id == 1 else 'specialty2'
 
     with transaction.atomic(using=db_name):
@@ -128,6 +129,7 @@ def book_appointment(patient, doctor, specialty_id, appointment_time):
             patient_id=patient.id,
             specialty_id=specialty_id,   # 👈 LƯU KHOA
             appointment_time=appointment_time,
+            price=price,
             status='confirmed'
         )
 
@@ -159,12 +161,15 @@ def book_appointment_view(request, doctor_username):
             request.POST.get("appointment_time"),
             "%H:%M - %d/%m/%Y"
         )
+        price_str = request.POST.get("price", "0")
+        price = float(re.sub(r'[^\d.]', '', price_str))  # loại bỏ ký tự không phải số/dấu chấm
 
         book_appointment(
             patient=patient,
             doctor=doctor,
             specialty_id=specialty_id,
-            appointment_time=appointment_time
+            appointment_time=appointment_time,
+            price=price
         )
 
         messages.success(request, "Đặt lịch thành công!")

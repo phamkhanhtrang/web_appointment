@@ -168,8 +168,9 @@
                                 value="Tên bác sĩ: {{ doctor_name.user.first_name }} {{ doctor_name.user.last_name }}">
                         </div>
                         <div class="col-12 col-sm-6">
-                            <input type="text" class="form-control bg-light border-0" placeholder="Giá dịch vụ"
-                                style="height: 55px;" value="{{ doctor_name.price_vnd  }} ">
+                            <input type="text" name="price" class="form-control bg-light border-0"
+                                placeholder="Giá dịch vụ" style="height: 55px;" value="{{ doctor_name.price_vnd }}">
+
                         </div>
                         <div class="col-12">
                             <textarea class="form-control bg-light border-0" rows="3" name="notes" id="notes"

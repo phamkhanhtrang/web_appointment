@@ -61,103 +61,150 @@ def admin(request):
     }
     return render(request, 'admin/index.html', context)
 
-
 def admin_login(request):
     template = loader.get_template('admin/login.html')
     return HttpResponse(template.render({}, request))    
+
 def admin_appointment(request):
-    # if request.method == "POST":
-    #     appointment_id = request.POST.get("appointment_id")
-    #     status = request.POST.get("status")
+    DB_LIST = ['specialty1', 'specialty2']
 
-    #     if appointment_id and status:
-    #         appointment = Appointment.objects.get(id=appointment_id)
-    #         appointment.status = status   # ✅ dùng dấu chấm
-    #         appointment.save()
-            # 
-    admin_total_appointments = Appointment.objects.count()
-    expired_appointment = Appointment.objects.filter(
+    # ==============================
+    # 1️⃣ Hủy lịch quá hạn (từng DB)
+    # ==============================
+    for db in DB_LIST:
+        Appointment.objects.using(db).filter(
             appointment_time__lt=now()
-        ).exclude(status__in=['completed', 'cancelled'])
-    expired_appointment.update(status='cancelled')
-    admin_total_revenue = Appointment.objects.filter(status='completed').aggregate(total=Sum('price'))['total'] or 0
-    admin_total_revenue_vnd = format_vnd(admin_total_revenue)
-    
-    admin_list_appointment = Appointment.objects.order_by('-appointment_time')[:10]
+        ).exclude(
+            status__in=['completed', 'cancelled']
+        ).update(status='cancelled')
 
-    
-    start = request.GET.get("start")
-    end = request.GET.get("end")
-    start_date = parse_date(start) if start else None
-    end_date = parse_date(end) if end else None
-    
-    
-    daily_stats = Appointment.objects.all() \
-            .annotate(day=TruncDay('appointment_time')) \
-            .values('day') \
-            .annotate(admin_total_appointments=Count('id'), 
-                      admin_total_revenue=Sum('price'),
-                      confirmed = Count('id', filter= Q(status = "confirmed")),
-                      completed = Count('id', filter= Q(status = "completed")),
-                      cancelled = Count('id', filter= Q(status = "cancelled")),
-                      pending = Count('id', filter = Q(status = "pending")))\
-            .order_by('day')
+    # ==============================
+    # 2️⃣ Tổng số lịch hẹn
+    # ==============================
+    admin_total_appointments = 0
+    for db in DB_LIST:
+        admin_total_appointments += Appointment.objects.using(db).count()
+
+    # ==============================
+    # 3️⃣ Tổng doanh thu
+    # ==============================
+    admin_total_revenue = 0
+    for db in DB_LIST:
+        revenue = Appointment.objects.using(db).filter(
+            status='completed'
+        ).aggregate(total=Sum('price'))['total'] or 0
+        admin_total_revenue += revenue
+
+    admin_total_revenue_vnd = format_vnd(admin_total_revenue)
+
+    # ==============================
+    # 4️⃣ Lấy 10 lịch hẹn mới nhất
+    # ==============================
+    all_appointments = []
+    for db in DB_LIST:
+        for a in Appointment.objects.using(db).all():
+            a._state.db = db  # giữ thông tin DB
+            all_appointments.append(a)
+
+    admin_list_appointment = sorted(
+        all_appointments,
+        key=lambda x: x.appointment_time,
+        reverse=True
+    )[:10]
+
+    # ==============================
+    # 5️⃣ Thống kê theo ngày (Chart)
+    # ==============================
+    daily_map = defaultdict(lambda: {
+        'appointments': 0,
+        'revenue': 0,
+        'confirmed': 0,
+        'pending': 0,
+        'completed': 0,
+        'cancelled': 0,
+    })
+
+    for a in all_appointments:
+        day = a.appointment_time.date().strftime('%Y-%m-%d')
+        daily_map[day]['appointments'] += 1
+        daily_map[day][a.status] += 1
+        if a.status == 'completed':
+            daily_map[day]['revenue'] += float(a.price)
 
     admin_chart_data = [
-            {
-                'day': stat['day'].strftime('%Y-%m-%d'),
-                'appointments': stat['admin_total_appointments'],
-                'revenue': float(stat['admin_total_revenue']) if stat['admin_total_revenue'] else 0,
-                'confirmed': stat['confirmed'],
-                'pending': stat['pending'],
-                'completed': stat['completed'],
-                'cancelled': stat['cancelled'],
-            }
-            for stat in daily_stats
-        ]   
-    if request.GET.get("export")=="1" and start_date and end_date:
-        appointments = Appointment.objects.filter(
-            appointment_time__date__range = [start_date,end_date]
-        ) 
-        
-        number_appointments = (
-            appointments.values("appointment_time__date")
-            .annotate(total_appointments = Count("id"))
-            .order_by("appointment_time__date") 
-        )
-        df_appointments = pd.DataFrame(list(number_appointments))
-        df_appointments.rename(columns={"appointment_time__date": "Ngày", "total_appointments": "Số lịch hẹn"}, inplace=True)
-        
-        status_stats = (
-            appointments.values("appointment_time__date")
-            .annotate(
-                confirmed=Count("id", filter=Q(status="confirmed")),
-                pending=Count("id", filter=Q(status="pending")),
-                cancelled=Count("id", filter=Q(status="cancelled")),
-                completed=Count("id", filter=Q(status="completed")),
-            )
-            .order_by("appointment_time__date")
-        )
-        df_status = pd.DataFrame(list(status_stats))
-        df_status.rename(columns={"appointment_time__date": "Ngày"}, inplace=True)
-        
-        response  = HttpResponse(
-            content_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        {
+            'day': day,
+            'appointments': data['appointments'],
+            'revenue': data['revenue'],
+            'confirmed': data['confirmed'],
+            'pending': data['pending'],
+            'completed': data['completed'],
+            'cancelled': data['cancelled'],
+        }
+        for day, data in sorted(daily_map.items())
+    ]
+
+    # ==============================
+    # 6️⃣ Export Excel
+    # ==============================
+    start = request.GET.get("start")
+    end = request.GET.get("end")
+
+    if request.GET.get("export") == "1" and start and end:
+        start_date = parse_date(start)
+        end_date = parse_date(end)
+
+        export_data = defaultdict(lambda: {
+            'total': 0,
+            'confirmed': 0,
+            'pending': 0,
+            'completed': 0,
+            'cancelled': 0,
+        })
+
+        for a in all_appointments:
+            day = a.appointment_time.date()
+            if start_date <= day <= end_date:
+                export_data[day]['total'] += 1
+                export_data[day][a.status] += 1
+
+        rows = []
+        for day, data in sorted(export_data.items()):
+            rows.append({
+                'Ngày': day.strftime('%Y-%m-%d'),
+                'Số lịch hẹn': data['total'],
+                'Confirmed': data['confirmed'],
+                'Pending': data['pending'],
+                'Completed': data['completed'],
+                'Cancelled': data['cancelled'],
+            })
+
+        df = pd.DataFrame(rows)
+
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
         filename = f"BaoCao_{start}_den_{end}.xlsx"
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
         with pd.ExcelWriter(response, engine="openpyxl") as writer:
-            df_appointments.to_excel(writer, sheet_name="Số lượng cuộc hẹn theo ngày", index=False)
-            df_status.to_excel(writer, sheet_name="Trạng thái lịch hẹn", index=False)
+            df.to_excel(writer, sheet_name="Thống kê lịch hẹn", index=False)
+
         return response
+
+    # ==============================
+    # 7️⃣ Render template
+    # ==============================
     context = {
-            'admin_total_appointments': admin_total_appointments,
-            'admin_total_revenue_vnd': admin_total_revenue_vnd,
-            'admin_list_appointment': admin_list_appointment,
-            'admin_chart_data': json.dumps(admin_chart_data)
+        'admin_total_appointments': admin_total_appointments,
+        'admin_total_revenue_vnd': admin_total_revenue_vnd,
+        'admin_list_appointment': admin_list_appointment,
+        'admin_chart_data': json.dumps(admin_chart_data),
     }
+
     template = loader.get_template('admin/appointment-list.html')
-    return HttpResponse(template.render( context, request))
+    return HttpResponse(template.render(context, request))
+
 def admin_doctor(request):
     from collections import defaultdict
 

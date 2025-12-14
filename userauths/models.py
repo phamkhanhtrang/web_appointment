@@ -65,13 +65,14 @@ class Patient(models.Model):
     def __str__(self):
         return self.user.get_full_name()
     
+# appointments/models.py
+
 class Appointment(models.Model):
-    doctor_id = models.IntegerField()
-    patient_id = models.IntegerField()
+    doctor_id = models.IntegerField(db_index=True)
+    patient_id = models.IntegerField(db_index=True)
 
     appointment_time = models.DateTimeField()
     notes = models.TextField(blank=True, null=True)
-
     price = models.DecimalField(max_digits=10, decimal_places=2)
 
     STATUS_CHOICES = [
@@ -80,9 +81,7 @@ class Appointment(models.Model):
         ('completed', 'Hoàn thành'),
         ('cancelled', 'Đã hủy'),
     ]
-    status = models.CharField(
-        max_length=20, choices=STATUS_CHOICES, default='pending'
-    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
 
     PAYMENT_CHOICES = [
         ('cash', 'Tiền mặt'),
@@ -90,12 +89,7 @@ class Appointment(models.Model):
         ('momo', 'Momo'),
         ('insurance', 'Bảo hiểm')
     ]
-    payment_method = models.CharField(
-        max_length=20, choices=PAYMENT_CHOICES, default='cash'
-    )
-
-    def price_vnd(self):
-        return f"{int(self.price):,}".replace(",", ".") + " VND"
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default='cash')
 
     class Meta:
         db_table = 'appointment'

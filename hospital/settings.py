@@ -134,38 +134,32 @@ WSGI_APPLICATION = "hospital.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-                "OPTIONS": {
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'"
-        },
-        "NAME": os.getenv("DB_NAME"),
-        "USER": os.getenv("DB_USER"),
-        "PASSWORD": os.getenv("DB_PASSWORD"),
-        "HOST": os.getenv("DB_HOST"),
+        "NAME": os.getenv("DB_NAME", "appointment_db"),
+        "USER": os.getenv("DB_USER", "admin"),
+        "PASSWORD": os.getenv("DB_PASSWORD", "28042004"),
+        "HOST": os.getenv("DB_HOST", "18.207.253.199"),
         "PORT": os.getenv("DB_PORT", "3306"),
     },
-        'specialty1': {  # SLAVE
-            "ENGINE": "django.db.backends.mysql",
-                    "OPTIONS": {
-                "init_command": "SET sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'"
-            },
-            "NAME": os.getenv("DB_NAME_SPECIALTY1"),
-            "USER": os.getenv("DB_USER_SPECIALTY1"),
-            "PASSWORD": os.getenv("DB_PASSWORD_SPECIALTY1"),
-            "HOST": os.getenv("DB_HOST_SPECIALTY1"),
-            "PORT": os.getenv("DB_PORT_SPECIALTY1", "3306"),
-        },
-            'specialty2': {  # SLAVE
-            "ENGINE": "django.db.backends.mysql",
-                    "OPTIONS": {
-                "init_command": "SET sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'"
-            },
-            "NAME": os.getenv("DB_NAME_SPECIALTY2"),
-            "USER": os.getenv("DB_USER_SPECIALTY2"),
-            "PASSWORD": os.getenv("DB_PASSWORD_SPECIALTY2"),
-            "HOST": os.getenv("DB_HOST_SPECIALTY2"),
-            "PORT": os.getenv("DB_PORT_SPECIALTY2", "3306"),
-        },
+
+    "specialty1": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": os.getenv("DB1_NAME", "appointment_db"),
+        "USER": os.getenv("DB1_USER", "admin"),
+        "PASSWORD": os.getenv("DB1_PASSWORD", "28042004"),
+        "HOST": os.getenv("DB1_HOST", "3.236.216.83"),
+        "PORT": "3306",
+    },
+
+    "specialty2": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": os.getenv("DB2_NAME", "appointment_db"),
+        "USER": os.getenv("DB2_USER", "admin"),
+        "PASSWORD": os.getenv("DB2_PASSWORD", "28042004"),
+        "HOST": os.getenv("DB2_HOST", "34.226.234.38"),
+        "PORT": "3306",
+    },
 }
+
 
 # Kích hoạt router
 DATABASE_ROUTERS = ['db_router.DatabaseRouter']

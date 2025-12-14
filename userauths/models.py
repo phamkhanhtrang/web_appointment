@@ -70,7 +70,7 @@ class Patient(models.Model):
 class Appointment(models.Model):
     doctor_id = models.IntegerField(db_index=True)
     patient_id = models.IntegerField(db_index=True)
-
+    specialty_id = models.IntegerField(db_index=True)
     appointment_time = models.DateTimeField()
     notes = models.TextField(blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -94,21 +94,6 @@ class Appointment(models.Model):
     class Meta:
         db_table = 'appointment'
         
-def enrich_appointments(appointments):
-    doctor_ids = set(a.doctor_id for a in appointments)
-    patient_ids = set(a.patient_id for a in appointments)
-
-    doctors = Doctor.objects.filter(id__in=doctor_ids)
-    patients = Patient.objects.filter(id__in=patient_ids)
-
-    doctor_map = {d.id: d for d in doctors}
-    patient_map = {p.id: p for p in patients}
-
-    for a in appointments:
-        a.doctor = doctor_map.get(a.doctor_id)
-        a.patient = patient_map.get(a.patient_id)
-
-    return appointments
 
 class Prescription(models.Model):
     appointment = models.OneToOneField(Appointment, on_delete=models.CASCADE, related_name='prescription')

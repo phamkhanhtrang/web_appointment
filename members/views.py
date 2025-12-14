@@ -119,19 +119,19 @@ def profile(request):
                'patient': patient }
     return render(request, 'members/profile.html', context)
 
-
 def book_appointment(patient, doctor, specialty_id, appointment_time):
     db_name = 'specialty1' if specialty_id == 1 else 'specialty2'
 
     with transaction.atomic(using=db_name):
         appointment = Appointment.objects.using(db_name).create(
-            doctor=doctor,
-            patient=patient,
+            doctor_id=doctor.id,
+            patient_id=patient.id,
+            specialty_id=specialty_id,   # 👈 LƯU KHOA
             appointment_time=appointment_time,
             status='confirmed'
         )
 
-    # 🔥 LỊCH LÀM CHUNG → CHỈ default
+    # Lịch làm chung
     DoctorSchedule.objects.update_or_create(
         doctor=doctor,
         date=appointment_time.date(),
@@ -140,53 +140,38 @@ def book_appointment(patient, doctor, specialty_id, appointment_time):
 
     return appointment
 
+
 def book_appointment_view(request, doctor_username):
     doctor = Doctor.objects.get(user__username=doctor_username)
     specialty_id = int(request.GET.get("specialty"))
-
-    # 🔥 DoctorSchedule là DB chung → KHÔNG using
-    doctor_schedule = DoctorSchedule.objects.filter(doctor=doctor)
-
-    # 🔥 Appointment phải đọc đúng DB
-    db_name = 'specialty1' if specialty_id == 1 else 'specialty2'
-    appointments = Appointment.objects.using(db_name).filter(
-        doctor=doctor,
-        status__in=['pending', 'confirmed', 'completed']
-    )
-
     patient = request.user.patient_profile
 
+    doctor_schedule = DoctorSchedule.objects.filter(doctor=doctor)
+
+    appointments_all = list(
+        Appointment.objects.using('specialty1').filter(doctor_id=doctor.id)
+    ) + list(
+        Appointment.objects.using('specialty2').filter(doctor_id=doctor.id)
+    )
+
     if request.method == "POST":
-        appointment_time_str = request.POST.get("appointment_time")
+        appointment_time = datetime.strptime(
+            request.POST.get("appointment_time"),
+            "%H:%M - %d/%m/%Y"
+        )
 
-        try:
-            appointment_time = datetime.strptime(
-                appointment_time_str, "%H:%M - %d/%m/%Y"
-            )
-        except:
-            messages.error(request, "Thời gian đặt lịch không hợp lệ.")
-            return redirect(f"/appointment/{doctor_username}?specialty={specialty_id}")
-
-        # ✅ GỌI SERVICE
-        appointment = book_appointment(
+        book_appointment(
             patient=patient,
             doctor=doctor,
             specialty_id=specialty_id,
             appointment_time=appointment_time
         )
 
-        if request.POST.get("payment_method") == "momo":
-            return redirect(
-                "payment-complete",
-                appointment_id=appointment.id
-            )
-
         messages.success(request, "Đặt lịch thành công!")
         return redirect(f"/appointment/{doctor_username}?specialty={specialty_id}")
 
-    # ----- render lịch -----
     booked_times = {}
-    for a in appointments:
+    for a in appointments_all:
         dt = localtime(a.appointment_time)
         booked_times.setdefault(
             dt.strftime("%Y-%m-%d"), []

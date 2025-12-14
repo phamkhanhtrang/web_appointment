@@ -3,14 +3,15 @@
 {% block content %}
 
 <div class="container my-5">
-{% if messages %}
-  {% for message in messages %}
-    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
-      {{ message }}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show"
+        role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
-  {% endfor %}
-{% endif %}
+    {% endfor %}
+    {% endif %}
 
     <!-- Profile Section -->
     <div class="card mb-4">
@@ -23,15 +24,18 @@
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="name" class="form-label">Tên đăng nhập</label>
-                        <input type="text" class="form-control" id="username" name = "username" value="{{ patient.user.username}}">
+                        <input type="text" class="form-control" id="username" name="username"
+                            value="{{ patient.user.username}}">
                     </div>
                     <div class="col-md-6">
                         <label for="name" class="form-label">Họ và tên</label>
-                        <input type="text" class="form-control" id="fullname" name = "fullname" value="{{ patient.user.first_name}} {{ patient.user.last_name}}">
+                        <input type="text" class="form-control" id="fullname" name="fullname"
+                            value="{{ patient.user.first_name}} {{ patient.user.last_name}}">
                     </div>
                     <div class="col-md-6">
                         <label for="phone" class="form-label">Số điện thoại</label>
-                        <input type="text" class="form-control" id="phone" name="phone" value="{{patient.user.phone_number }}">
+                        <input type="text" class="form-control" id="phone" name="phone"
+                            value="{{patient.user.phone_number }}">
                     </div>
                     <div class="col-md-6">
                         <label for="email" class="form-label">Email</label>
@@ -40,7 +44,7 @@
                     </div>
                     <div class="col-md-6">
                         <label for="password" class="form-label">Mật khẩu</label>
-                        <input type="password" class="form-control" id="password" name="password"placeholder="******">
+                        <input type="password" class="form-control" id="password" name="password" placeholder="******">
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary">Cập nhật thông tin</button>
@@ -68,7 +72,14 @@
                     {% for appointment in appointments %}
                     <tr>
                         <td>{{ forloop.counter }}</td>
-                        <td>{{ appointment.doctor.user.get_full_name}}</td>
+                        <td>
+                            {% if appointment.doctor_obj %}
+                            {{ appointment.doctor_obj.user.get_full_name }}
+                            {% else %}
+                            Không rõ
+                            {% endif %}
+                        </td>
+
                         <td>{{ appointment.price }}</td>
                         <td>{{ appointment.get_status_display }}</td>
                         <td>{{appointment.appointment_time| date:"d/m/y H:i"}}</td>

@@ -67,10 +67,6 @@ def admin_login(request):
 
 def admin_appointment(request):
     DB_LIST = ['specialty1', 'specialty2']
-
-    # ==============================
-    # 1️⃣ Hủy lịch quá hạn (từng DB)
-    # ==============================
     for db in DB_LIST:
         Appointment.objects.using(db).filter(
             appointment_time__lt=now()
@@ -78,16 +74,10 @@ def admin_appointment(request):
             status__in=['completed', 'cancelled']
         ).update(status='cancelled')
 
-    # ==============================
-    # 2️⃣ Tổng số lịch hẹn
-    # ==============================
     admin_total_appointments = 0
     for db in DB_LIST:
         admin_total_appointments += Appointment.objects.using(db).count()
 
-    # ==============================
-    # 3️⃣ Tổng doanh thu
-    # ==============================
     admin_total_revenue = 0
     for db in DB_LIST:
         revenue = Appointment.objects.using(db).filter(
@@ -97,9 +87,6 @@ def admin_appointment(request):
 
     admin_total_revenue_vnd = format_vnd(admin_total_revenue)
 
-    # ==============================
-    # 4️⃣ Lấy 10 lịch hẹn mới nhất
-    # ==============================
     all_appointments = []
     for db in DB_LIST:
         for a in Appointment.objects.using(db).all():
@@ -111,10 +98,6 @@ def admin_appointment(request):
         key=lambda x: x.appointment_time,
         reverse=True
     )[:10]
-
-    # ==============================
-    # 5️⃣ Thống kê theo ngày (Chart)
-    # ==============================
     daily_map = defaultdict(lambda: {
         'appointments': 0,
         'revenue': 0,
@@ -143,10 +126,6 @@ def admin_appointment(request):
         }
         for day, data in sorted(daily_map.items())
     ]
-
-    # ==============================
-    # 6️⃣ Export Excel
-    # ==============================
     start = request.GET.get("start")
     end = request.GET.get("end")
 
@@ -192,9 +171,6 @@ def admin_appointment(request):
 
         return response
 
-    # ==============================
-    # 7️⃣ Render template
-    # ==============================
     context = {
         'admin_total_appointments': admin_total_appointments,
         'admin_total_revenue_vnd': admin_total_revenue_vnd,
@@ -270,62 +246,89 @@ def admin_doctor(request):
     return render(request, 'admin/doctor-list.html', context)
 
 def admin_patient(request):
-    # --- Lấy dữ liệu filter ---
+    DB_LIST = ['specialty1', 'specialty2']
+
     start = request.GET.get("start")
     end = request.GET.get("end")
     start_date = parse_date(start) if start else None
     end_date = parse_date(end) if end else None
 
-    # --- Danh sách bệnh nhân ---
-    admin_list_patient = Patient.objects.all() \
-        .values(
-            'user__first_name',
-            'user__last_name',
-            'user__email',
-            'user__phone_number'
-        ) \
-        .annotate(
-            total=Count('appointments'),
-            last_visit_date=Max('appointments__appointment_time')
-        ) \
-        .order_by('-total')
+    all_appointments = []
+    for db in DB_LIST:
+        for a in Appointment.objects.using(db).all():
+            a._state.db = db
+            all_appointments.append(a)
 
-    # --- Subquery: ngày khám đầu tiên của từng bệnh nhân ---
-    first_appointment = Appointment.objects.filter(
-        patient_id=OuterRef('patient_id')
-    ).order_by('appointment_time').values('appointment_time')[:1]
+    patient_map = defaultdict(list)
+    for a in all_appointments:
+        patient_map[a.patient_id].append(a)
 
-    # --- Thống kê theo ngày ---
-    daily_stats = Appointment.objects.annotate(
-        first_date=Subquery(first_appointment),
-        day=TruncDay('appointment_time')
-    ).values('day').annotate(
-        admin_total_appointments=Count('id'),
-        admin_total_patient=Count('patient_id', distinct=True),
-        new_patients=Count('id', filter=Q(appointment_time=F('first_date'))),
-        returning_patients=Count('id', filter=Q(appointment_time__gt=F('first_date')))
-    ).order_by('day')
+    patients = Patient.objects.select_related('user').all()
+    admin_list_patient = []
+
+    for p in patients:
+        appts = patient_map.get(p.id, [])
+
+        total = len(appts)
+        last_visit = max(
+            [a.appointment_time for a in appts],
+            default=None
+        )
+
+        admin_list_patient.append({
+            'first_name': p.user.first_name,
+            'last_name': p.user.last_name,
+            'email': p.user.email,
+            'phone_number': p.user.phone_number,
+            'total': total,
+            'last_visit_date': (
+                localtime(last_visit).strftime('%Y-%m-%d %H:%M')
+                if last_visit else None
+            )
+        })
+
+    admin_list_patient.sort(key=lambda x: x['total'], reverse=True)
+
+    first_visit = {}
+    for pid, appts in patient_map.items():
+        first_visit[pid] = min(a.appointment_time for a in appts)
+
+    daily_map = defaultdict(lambda: {
+        'appointments': 0,
+        'patients': set(),
+        'new_patients': set(),
+        'returning_patients': set(),
+    })
+
+    for a in all_appointments:
+        day = a.appointment_time.date()
+        pid = a.patient_id
+
+        if start_date and end_date:
+            if not (start_date <= day <= end_date):
+                continue
+
+        daily_map[day]['appointments'] += 1
+        daily_map[day]['patients'].add(pid)
+
+        if a.appointment_time == first_visit.get(pid):
+            daily_map[day]['new_patients'].add(pid)
+        else:
+            daily_map[day]['returning_patients'].add(pid)
 
     admin_chart_data = [
         {
-            'day': stat['day'].strftime('%Y-%m-%d') if stat['day'] else None,
-            'appointments': stat['admin_total_appointments'],
-            'patients': stat['admin_total_patient'],
-            'new_patients': stat['new_patients'],
-            'returning_patients': stat['returning_patients'],
+            'day': day.strftime('%Y-%m-%d'),
+            'appointments': data['appointments'],
+            'patients': len(data['patients']),
+            'new_patients': len(data['new_patients']),
+            'returning_patients': len(data['returning_patients']),
         }
-        for stat in daily_stats
+        for day, data in sorted(daily_map.items())
     ]
-
     if request.GET.get("export") == "1" and start_date and end_date:
-        df_patients = pd.DataFrame(list(admin_list_patient))
+        df_patients = pd.DataFrame(admin_list_patient)
         df_chart = pd.DataFrame(admin_chart_data)
-
-        for df in [df_patients, df_chart]:
-            for col in df.select_dtypes(include=['datetimetz']).columns:
-                df[col] = df[col].dt.tz_localize(None)
-            for col in df.select_dtypes(include=['datetime64[ns]']).columns:
-                df[col] = df[col].dt.strftime("%Y-%m-%d %H:%M")
 
         response = HttpResponse(
             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -335,15 +338,15 @@ def admin_patient(request):
 
         with pd.ExcelWriter(response, engine="openpyxl") as writer:
             df_patients.to_excel(writer, sheet_name="Danh sách bệnh nhân", index=False)
-            df_chart.to_excel(writer, sheet_name="Thống kê", index=False)
+            df_chart.to_excel(writer, sheet_name="Thống kê theo ngày", index=False)
 
         return response
 
-    # --- Render template ---
     context = {
         'admin_list_patient': admin_list_patient,
         'admin_chart_data': json.dumps(admin_chart_data),
     }
+
     template = loader.get_template('admin/patient-list.html')
     return HttpResponse(template.render(context, request))
 

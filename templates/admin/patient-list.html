@@ -19,14 +19,14 @@
 				<table class="datatable table table-hover align-middle table-center mb-0">
 					<thead class="table-light">
 						<tr>
-							<th class="text-center">STT</th>
-							<th style="width:60px;">Tên bệnh nhân</th>
-							<th class="text-center">Số lần tái khám</th>
-							<th class="text-center">SĐT </th>
-							<th class="text-center">Lần khám gần nhất</th>
-
+							<th style="width:50px;" class="text-center">STT</th>
+							<th style="width:220px;">Tên bệnh nhân</th>
+							<th style="width:120px;" class="text-center">Số lần khám</th>
+							<th style="width:140px;" class="text-center text-nowrap">SĐT</th>
+							<th style="width:160px;" class="text-center">Lần khám gần nhất</th>
 						</tr>
 					</thead>
+
 					<tbody>
 						{% for patient in admin_list_patient %}
 						<tr>
@@ -48,7 +48,6 @@
 						</tr>
 						{% endfor %}
 					</tbody>
-
 				</table>
 			</div>
 		</div>

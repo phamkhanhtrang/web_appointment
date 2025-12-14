@@ -354,10 +354,10 @@ def admin_calendar(request, doctor_username):
     doctor = Doctor.objects.get(user__username=doctor_username)
     name_doctor = doctor.user.username
     status_summary = (
-        Appointment.objects.filter(doctor=doctor)
-        .values('status')
-        .annotate(total=Count('id'))
-    )
+    Appointment.objects.filter(doctor_id=doctor.id)
+    .values('status')
+    .annotate(total=Count('id'))
+)
     doctor_total_appointments = sum(s['total'] for s in status_summary)
     doctor_total_appointments_pending = next((s['total'] for s in status_summary if s['status'] == 'pending'), 0)
     doctor_total_appointments_completed = next((s['total'] for s in status_summary if s['status'] == 'completed'), 0)
@@ -388,7 +388,7 @@ def admin_calendar(request, doctor_username):
         status_data[day_str][stat['status']] = stat['count']
     status_data = dict(status_data)
 
-    daily_stats = Appointment.objects.filter(doctor=doctor, status='completed')
+    daily_stats = Appointment.objects.filter(doctor_id=doctor.id, status='completed')
     if start_date and end_date:
         daily_stats = daily_stats.filter(appointment_time__date__range=[start_date, end_date])
 
@@ -409,9 +409,10 @@ def admin_calendar(request, doctor_username):
     ]
     if request.GET.get("export") == "1" and start_date and end_date:
         appointments = Appointment.objects.filter(
-            doctor=doctor,
-            appointment_time__date__range=[start_date, end_date]
-        )
+    doctor_id=doctor.id,
+    appointment_time__date__range=[start_date, end_date]
+)
+
 
         # sheet lịch hẹn theo trạng thái
         status_stats = (

@@ -111,7 +111,27 @@ def profile(request):
         return redirect('profile')
         
     try:       
-        appointments = Appointment.objects.filter(patient_id=patient.id).order_by('-appointment_time')
+        appointments = list(
+            Appointment.objects.using('specialty1')
+            .filter(patient_id=patient.id)
+) + list(
+    Appointment.objects.using('specialty2')
+    .filter(patient_id=patient.id)
+    )
+
+        appointments = sorted(
+        appointments,
+        key=lambda x: x.appointment_time,
+        reverse=True
+        )
+
+        doctor_ids = [a.doctor_id for a in appointments]
+        doctor_map = {
+            d.id: d
+            for d in Doctor.objects.filter(id__in=doctor_ids).select_related('user')
+        }
+        for a in appointments:
+            a.doctor_obj = doctor_map.get(a.doctor_id)
     except Patient.DoesNotExist:
         appointments = []
     

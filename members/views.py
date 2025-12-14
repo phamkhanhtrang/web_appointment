@@ -148,8 +148,7 @@ def book_appointment_view(request, doctor_username):
     specialty_id = int(request.GET.get("specialty"))
     patient = request.user.patient_profile
 
-    doctor_schedule = DoctorSchedule.objects.filter(doctor=doctor)
-
+    # Lấy tất cả appointments của bác sĩ
     appointments_all = list(
         Appointment.objects.using('specialty1').filter(doctor_id=doctor.id)
     ) + list(
@@ -161,34 +160,40 @@ def book_appointment_view(request, doctor_username):
             request.POST.get("appointment_time"),
             "%H:%M - %d/%m/%Y"
         )
+        # Lấy giá từ form
         price_str = request.POST.get("price", "0")
-        price = float(re.sub(r'[^\d.]', '', price_str))  # loại bỏ ký tự không phải số/dấu chấm
+        price = float(re.sub(r'[^\d.]', '', price_str))  # chỉ lấy số
+        notes = request.POST.get("notes", "")
 
-        book_appointment(
-            patient=patient,
-            doctor=doctor,
-            specialty_id=specialty_id,
-            appointment_time=appointment_time,
-            price=price
-        )
+        # Đặt lịch
+        db_name = 'specialty1' if specialty_id == 1 else 'specialty2'
+        with transaction.atomic(using=db_name):
+            Appointment.objects.using(db_name).create(
+                doctor_id=doctor.id,
+                patient_id=patient.id,
+                specialty_id=specialty_id,
+                appointment_time=appointment_time,
+                status='confirmed',
+                price=price,
+                notes=notes,
+            )
 
         messages.success(request, "Đặt lịch thành công!")
-        return redirect(f"/about/appointment/{doctor_username}?specialty={specialty_id}")
+        return redirect(f"/appointment/{doctor_username}?specialty={specialty_id}")
 
+    # Tạo dict để biết giờ nào đã được đặt
     booked_times = {}
     for a in appointments_all:
         dt = localtime(a.appointment_time)
-        booked_times.setdefault(
-            dt.strftime("%Y-%m-%d"), []
-        ).append(dt.strftime("%H:%M"))
+        booked_times.setdefault(dt.strftime("%Y-%m-%d"), []).append(dt.strftime("%H:%M"))
 
+    # Lấy lịch làm việc chung của bác sĩ
+    doctor_schedule = DoctorSchedule.objects.filter(doctor=doctor)
     data = [
         {
             "date": s.date.strftime("%Y-%m-%d"),
             "status": s.status,
-            "booked_times": booked_times.get(
-                s.date.strftime("%Y-%m-%d"), []
-            )
+            "booked_times": booked_times.get(s.date.strftime("%Y-%m-%d"), [])
         }
         for s in doctor_schedule
     ]

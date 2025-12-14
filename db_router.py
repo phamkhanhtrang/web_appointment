@@ -3,8 +3,6 @@ class DatabaseRouter:
         'user',
         'doctor',
         'patient',
-        'prescription',
-        'prescriptiondetail',
         'doctorschedule',
         'specialty',
     }

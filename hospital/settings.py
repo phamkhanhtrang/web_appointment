@@ -143,19 +143,19 @@ DATABASES = {
 
     "specialty1": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": os.getenv("DB1_NAME", "appointment_db"),
-        "USER": os.getenv("DB1_USER", "admin"),
-        "PASSWORD": os.getenv("DB1_PASSWORD", "28042004"),
-        "HOST": os.getenv("DB1_HOST", "3.236.216.83"),
+        "NAME": os.getenv("DB_NAME_SPECIALTY1", "appointment_db"),
+        "USER": os.getenv("DB_USER_SPECIALTY1", "admin"),
+        "PASSWORD": os.getenv("DB_PASSWORD_SPECIALTY1", "28042004"),
+        "HOST": os.getenv("DB_HOST_SPECIALTY1", "3.236.216.83"),
         "PORT": "3306",
     },
 
     "specialty2": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": os.getenv("DB2_NAME", "appointment_db"),
-        "USER": os.getenv("DB2_USER", "admin"),
-        "PASSWORD": os.getenv("DB2_PASSWORD", "28042004"),
-        "HOST": os.getenv("DB2_HOST", "34.226.234.38"),
+        "NAME": os.getenv("DB_NAME_SPECIALTY2", "appointment_db"),
+        "USER": os.getenv("DB_USER_SPECIALTY2", "admin"),
+        "PASSWORD": os.getenv("DB_PASSWORD_SPECIALTY2", "28042004"),
+        "HOST": os.getenv("DB_HOST_SPECIALTY2", "34.226.234.38"),
         "PORT": "3306",
     },
 }

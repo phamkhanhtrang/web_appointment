@@ -5,7 +5,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from django.template import loader
 from userauths.models import Appointment, Prescription
-from userauths.models import Doctor,User
+from userauths.models import Doctor,User, Patient
 from django.db.models import Count,Sum
 from django.db.models.functions import TruncMonth
 from django.shortcuts import get_object_or_404, redirect
@@ -15,6 +15,7 @@ from userauths.models import format_vnd
 from django.contrib import messages
 from django.db import IntegrityError
 from django.db.models import Prefetch
+
 
 
 # Create your views here.
@@ -105,33 +106,54 @@ def doctor_view(request):
 def appointment_view(request):
     try:
         doctor = request.user.doctor_profile
-        # Huỷ các lịch hẹn quá hạn chưa hoàn thành
-        expired_appointment = Appointment.objects.filter(
-            doctor_id=doctor.id,
-            appointment_time__lt=now()
-        ).exclude(status__in=['completed', 'cancelled'])
-        expired_appointment.update(status='cancelled')
 
-        # Danh sách lịch hẹn
-        appointments = Appointment.objects.filter(doctor_id=doctor.id).order_by('-appointment_time') \
-    .select_related('patient__user') \
-    .prefetch_related(
-        'prescription__details'
-    )
-        # Cập nhật trạng thái lịch hẹn nếu có POST
+        # ===== 1. Lấy appointment từ 2 DB =====
+        appointments = list(
+            Appointment.objects.using('specialty1')
+            .filter(doctor_id=doctor.id)
+        ) + list(
+            Appointment.objects.using('specialty2')
+            .filter(doctor_id=doctor.id)
+        )
+
+        # ===== 2. Huỷ lịch quá hạn =====
+        for a in appointments:
+            if a.appointment_time < now() and a.status not in ['completed', 'cancelled']:
+                a.status = 'cancelled'
+                a.save(using=a._state.db)
+
+        # ===== 3. Sắp xếp =====
+        appointments.sort(key=lambda x: x.appointment_time, reverse=True)
+
+        # ===== 4. Load bệnh nhân (JOIN APP-LAYER) =====
+        patient_ids = {a.patient_id for a in appointments}
+        patient_map = {
+            p.id: p
+            for p in Patient.objects.filter(id__in=patient_ids)
+            .select_related('user')
+        }
+
+        for a in appointments:
+            a.patient_obj = patient_map.get(a.patient_id)
+
+        # ===== 5. Cập nhật trạng thái =====
         if request.method == 'POST':
-            appointment_id = request.POST.get('appointment_id')
+            appointment_id = int(request.POST.get('appointment_id'))
             new_status = request.POST.get('status')
-            appointment = get_object_or_404(Appointment, id=appointment_id, doctor_id=doctor.id)
-            appointment.status = new_status
-            appointment.save()
-            # messages.success(request, "Cập nhật trạng thái thành công.")
+
+            for a in appointments:
+                if a.id == appointment_id:
+                    a.status = new_status
+                    a.save(using=a._state.db)
+                    break
 
     except Doctor.DoesNotExist:
         appointments = []
 
-    context = {'appointments': appointments}
-    return render(request,'doctor/appointment-list.html', context)
+    context = {
+        'appointments': appointments
+    }
+    return render(request, 'doctor/appointment-list.html', context)
 @role_required('doctor')
 def patient_view(request):
     try:

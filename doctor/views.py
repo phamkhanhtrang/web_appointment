@@ -23,25 +23,25 @@ def doctor_view(request):
     try:
         doctor = request.user.doctor_profile
         
-        total_patients = Appointment.objects.filter(doctor=doctor).values('patient').distinct().count()
+        total_patients = Appointment.objects.filter(doctor_id=doctor.id).values('patient').distinct().count()
 
-        total_appointments = Appointment.objects.filter(doctor=doctor, ).count()
+        total_appointments = Appointment.objects.filter(doctor_id=doctor.id).count()
 
-        total_revenue = Appointment.objects.filter(doctor=doctor, 
+        total_revenue = Appointment.objects.filter(doctor_id=doctor.id, 
                                                    status = 'completed').aggregate(total=Sum('price'))['total'] or 0
         total_revenue_vnd = format_vnd(total_revenue)
 
         # Thống kê theo bệnh nhân
-        patient_stats = Appointment.objects.filter(doctor=doctor) \
+        patient_stats = Appointment.objects.filter(doctor_id=doctor.id) \
             .values('patient__user__username') \
             .annotate(total=Count('id')) \
             .order_by('-total')
 
         # Tất cả lịch hẹn
-        appointments = Appointment.objects.filter(doctor=doctor).order_by('-appointment_time')
+        appointments = Appointment.objects.filter(doctor_id=doctor.id).order_by('-appointment_time')
 
         # Biểu đồ: cuộc hẹn và doanh thu theo tháng
-        monthly_stats = Appointment.objects.filter(doctor=doctor, status='completed') \
+        monthly_stats = Appointment.objects.filter(doctor_id=doctor.id, status='completed') \
             .annotate(month=TruncMonth('appointment_time')) \
             .values('month') \
             .annotate(total_appointments=Count('id'), total_revenue=Sum('price')) \

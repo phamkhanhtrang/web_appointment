@@ -97,8 +97,8 @@ class Appointment(models.Model):
 
 class Prescription(models.Model):
     appointment = models.OneToOneField(Appointment, on_delete=models.CASCADE, related_name='prescription')
-    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='prescriptions')
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='prescriptions')
+    doctor_id = models.IntegerField(db_index=True)
+    patient_id = models.IntegerField(db_index=True)
     diagnosis = models.CharField(max_length=255, blank=True, null=True)
     note = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

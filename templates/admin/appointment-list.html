@@ -40,7 +40,7 @@
 					<thead class="table-light">
 						<tr>
 							<th class="text-center">STT</th>
-							<th style="width:60px;">Bác sĩ</th>
+							<th class="text-center">Bác sĩ</th>
 							<th class="text-center">Tên bệnh nhân</th>
 							<th class="text-center">Thời gian </th>
 							<th class="text-center">Trạng thái</th>
@@ -57,10 +57,10 @@
 								<span class="fw-bold">BS. {{ appointment.doctor_obj.user.get_full_name}}</span>
 							</td>
 							<td><span class="fw-bold">{{ appointment.patient_obj.user.get_full_name }}</span></td>
-							<td class="text-center">{{ appointment.appointment_time| date:"H:i d/m/y" }}</td>
-							<td class="text-center">{{ appointment.status }}</td>
-							<!-- <td> -->
-								<!-- <div class="status-toggle">
+							<td><span class="fw-bold">{{ appointment.appointment_time| date:"H:i d/m/y" }}</span></td>
+							<td><span class="fw-bold">{{ appointment.patient_obj.user.get_full_name }}</span></td>
+							<td>
+								<div class="status-toggle">
 									<form method="post">
 										{% csrf_token %}
 										<input type="hidden" name="appointment_id" value="{{ appointment.id }}">
@@ -72,8 +72,8 @@
 
 										</select>
 									</form>
-								</div> -->
-							<!-- </td> -->
+								</div>
+							</td>
 							<td class="text-right">{{appointment.price}}
 							</td>
 						</tr>

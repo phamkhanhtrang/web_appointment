@@ -83,7 +83,7 @@
 										class="rounded-circle me-2" width="36">
 									<span class="fw-bold">BS.{{ list_doctor.user.get_full_name }}</span>
 								</td>
-								<td><span class="badge bg-primary">{{ list_doctor.specialization }}</span></td>
+								<td><span class="badge bg-primary">{{ list_doctor.specialty_names }}</span></td>
 								<td class="text-center">{{list_doctor.price_vnd}}</td>
 								<td class="text-center">{{ list_doctor.user.phone_number }}</td>
 								<td class="text-center"><a href="admin-calendar/{{ list_doctor.user.username }}">Xem

@@ -204,6 +204,12 @@ def admin_doctor(request):
     for d in admin_list_doctor:
         d.total = doctor_total_map.get(d.id, 0)
 
+    # ⭐ LẤY TÊN KHOA
+        d.specialty_names = ", ".join(
+            [s.name for s in d.specialties.all()]
+    )
+
+
     admin_list_doctor = sorted(
         admin_list_doctor,
         key=lambda d: d.total,

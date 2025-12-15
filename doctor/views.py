@@ -314,17 +314,15 @@ def calendar_view(request):
             messages.error(request, "Không tìm thấy lịch hẹn.")
             return redirect('calendar_view')
 
-    # 🔥 LẤY DB ĐÚNG CỦA APPOINTMENT
-        db_name = appointment._db
+        db_name = appointment._db   # specialty1 hoặc specialty2
 
-    # ✅ CREATE PRESCRIPTION ĐÚNG DB + ĐÚNG FK
         prescription = Prescription.objects.using(db_name).create(
-        appointment=appointment,   # ✅ dùng object
-        doctor_id=doctor.id,
-        patient_id=appointment.patient_id,
-        diagnosis=diagnosis,
-        note=note
-    )
+    appointment_id=appointment.id,
+    doctor_id=doctor.id,
+    patient_id=appointment.patient_id,
+    diagnosis=diagnosis,
+    note=note
+)
 
         medicine_names = request.POST.getlist('medicine_name[]')
         dosages = request.POST.getlist('dosage[]')
@@ -333,14 +331,12 @@ def calendar_view(request):
 
         for i in range(len(medicine_names)):
             if medicine_names[i].strip():
-                PrescriptionDetail.objects.using(db_name).create(
-                    prescription=prescription,
-                medication_name=medicine_names[i],
-                dosage=dosages[i],
-                usage=usages[i],
-                quantity=int(quantities[i]) if quantities[i].isdigit() else 1
-            )
-
+               prescription.details.using(db_name).create(
+    medication_name=medicine_names[i],
+    dosage=dosages[i],
+    usage=usages[i],
+    quantity=int(quantities[i]) if quantities[i].isdigit() else 1
+)
         messages.success(request, "Kê đơn thành công.")
         return redirect('calendar_view')
 

@@ -42,7 +42,7 @@
 									<!-- <a href="profile.html" class="avatar avatar-sm mr-2"><img
 														class="avatar-img rounded-circle"
 														src="assets/img/patients/patient1.jpg" ></a> -->
-									<a>{{ appointment.doctor_obj.user.get_full_name }} </a>
+									<a>{{ appointment.patient_obj.user.get_full_name }} </a>
 								</h2>
 							</td>
 							<td>{{appointment.appointment_time| date:"d/m/y H:i"}}</span>
@@ -70,7 +70,7 @@
 								</a>
 							</td>
 
-							<td class="text-right">{{appointment.price_vnd}}
+							<td class="text-right">{{ appointment.price|floatformat:0 }}
 							</td>
 						</tr>
 						{% endfor %}
@@ -94,7 +94,7 @@
 									<div class="form-group mb-3">
 										<label>Tên bệnh nhân</label>
 										<input type="text" class="form-control"
-											value="{{ appointment.patient.user.get_full_name }}" readonly>
+											value="{{ appointment.patient_obj.user.get_full_name }}" readonly>
 									</div>
 									<table class="table table-bordered" id="medicine-table-{{ appointment.id }}">
 										<thead>

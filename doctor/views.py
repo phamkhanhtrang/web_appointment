@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.template import loader
-from userauths.models import Appointment, Prescription
+from userauths.models import Appointment, Prescription,PrescriptionDetail
 from userauths.models import Doctor,User, Patient
 from django.db.models import Count,Sum
 from django.db.models.functions import TruncMonth
@@ -300,28 +300,31 @@ def calendar_view(request):
         })
 
     # ===== KÊ ĐƠN =====
+    # ===== KÊ ĐƠN =====
     if request.method == 'POST':
         appointment_id = int(request.POST.get('appointment_id'))
         diagnosis = request.POST.get('diagnosis')
         note = request.POST.get('note')
-
         appointment = None
         for a in appointments:
             if a.id == appointment_id:
                 appointment = a
                 break
-
         if not appointment:
             messages.error(request, "Không tìm thấy lịch hẹn.")
             return redirect('calendar_view')
 
-        prescription = Prescription.objects.create(
-            appointment_id=appointment.id,
-            doctor_id=doctor.id,
-            patient_id=appointment.patient_id,
-            diagnosis=diagnosis,
-            note=note
-        )
+    # 🔥 LẤY DB ĐÚNG CỦA APPOINTMENT
+        db_name = appointment._db
+
+    # ✅ CREATE PRESCRIPTION ĐÚNG DB + ĐÚNG FK
+        prescription = Prescription.objects.using(db_name).create(
+        appointment=appointment,   # ✅ dùng object
+        doctor_id=doctor.id,
+        patient_id=appointment.patient_id,
+        diagnosis=diagnosis,
+        note=note
+    )
 
         medicine_names = request.POST.getlist('medicine_name[]')
         dosages = request.POST.getlist('dosage[]')
@@ -330,15 +333,17 @@ def calendar_view(request):
 
         for i in range(len(medicine_names)):
             if medicine_names[i].strip():
-                prescription.details.create(
-                    medication_name=medicine_names[i],
-                    dosage=dosages[i],
-                    usage=usages[i],
-                    quantity=int(quantities[i]) if quantities[i].isdigit() else 1
-                )
+                PrescriptionDetail.objects.using(db_name).create(
+                    prescription=prescription,
+                medication_name=medicine_names[i],
+                dosage=dosages[i],
+                usage=usages[i],
+                quantity=int(quantities[i]) if quantities[i].isdigit() else 1
+            )
 
         messages.success(request, "Kê đơn thành công.")
         return redirect('calendar_view')
+
 
     return render(
         request,

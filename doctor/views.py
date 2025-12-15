@@ -166,27 +166,48 @@ def appointment_view(request):
 def patient_view(request):
     try:
         doctor = request.user.doctor_profile
-        # Nhóm theo bệnh nhân và đếm số lần đặt lịch
-        patient_stats = (
-            Appointment.objects.filter(doctor_id=doctor.id)
-            .values( 'patient__user__phone_number','patient__user__first_name','patient__user__last_name')
-            .annotate(
-                total=Count('id'),
-                total_price=Sum('price')
-            )
-            .order_by('-total')
-        )
-        for stat in patient_stats:
-            stat['total_price_vnd'] = format_vnd(stat['total_price'])
-
-        # Danh sách tất cả các lịch hẹn (để hiển thị chi tiết nếu cần)
-        appointments = Appointment.objects.filter(doctor_id=doctor.id).order_by('-appointment_time')
-    except Doctor.DoesNotExist:
         appointments = []
-        patient_stats = []
+
+        # ===== LẤY LỊCH HẸN TỪ CÁC DB =====
+        for db in ['specialty1', 'specialty2']:
+            qs = Appointment.objects.using(db).filter(doctor_id=doctor.id)
+            for a in qs:
+                appointments.append(a)
+
+        # ===== GROUP THEO PATIENT_ID =====
+        patient_stats = {}
+        for a in appointments:
+            pid = a.patient_id
+            if pid not in patient_stats:
+                patient_stats[pid] = {
+                    'total': 0,
+                    'total_price': 0
+                }
+            patient_stats[pid]['total'] += 1
+            patient_stats[pid]['total_price'] += a.price or 0
+
+        # ===== JOIN PATIENT =====
+        patients = Patient.objects.filter(
+            id__in=patient_stats.keys()
+        ).select_related('user')
+
+        result = []
+        for p in patients:
+            stat = patient_stats.get(p.id)
+            result.append({
+                'full_name': p.user.get_full_name(),
+                'phone_number': p.user.phone_number,
+                'total': stat['total'],
+                'total_price_vnd': format_vnd(stat['total_price']),
+            })
+
+        result.sort(key=lambda x: x['total'], reverse=True)
+
+    except Doctor.DoesNotExist:
+        result = []
+
     context = {
-        # 'appointments': appointments,
-        'patient_stats': patient_stats,
+        'patient_stats': result
     }
     return render(request, 'doctor/patient-list.html', context)
 @role_required('doctor')

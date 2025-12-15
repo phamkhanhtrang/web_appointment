@@ -35,23 +35,20 @@
 										</tr>
 									</thead>
 									<tbody>
-										{% for stat in patient_stats %}
+										{% for p in patient_stats %}
 										<tr>
 											<td>{{ forloop.counter }}</td>
-											<td>
-												<h2 class="table-avatar">
-													<!-- <a href="profile.html" class="avatar avatar-sm mr-2"><img
-															class="avatar-img rounded-circle"
-															src="assets/img/patients/patient1.jpg" alt="User Image"></a> -->
-													<a>{{ stat.patient__user__first_name }} {{ stat.patient__user__last_name }}</a>
-												</h2>
-											</td>
-											<td>{{stat.total}}</td>
-											<td>{{stat.patient__user__phone_number}}</td>
-											<!-- <td>20 Oct 2019</td> -->
-											<td class="text-right">{{stat.total_price_vnd}}</td>
+											<td>{{ p.full_name }}</td>
+											<td>{{ p.phone_number }}</td>
+											<td>{{ p.total }}</td>
+											<td>{{ p.total_price_vnd }}</td>
 										</tr>
-										{%endfor%}
+										{% empty %}
+										<tr>
+											<td colspan="5">Chưa có bệnh nhân</td>
+										</tr>
+										{% endfor %}
+
 									</tbody>
 								</table>
 							</div>

@@ -103,29 +103,37 @@ def doctor_view(request):
     return render(request, 'doctor/index.html', context)
 
 @role_required('doctor')
+    
 def appointment_view(request):
     try:
         doctor = request.user.doctor_profile
 
-        # ===== 1. Lấy appointment từ 2 DB =====
-        appointments = list(
-            Appointment.objects.using('specialty1')
-            .filter(doctor_id=doctor.id)
-        ) + list(
-            Appointment.objects.using('specialty2')
-            .filter(doctor_id=doctor.id)
-        )
+        # ===== Map khoa =====
+        SPECIALTY_MAP = {
+            1: "Khoa Nội",
+            2: "Khoa Ngoại",
+        }
+        filter_specialty = request.GET.get("specialty")  # "1" hoặc "2"
 
-        # ===== 2. Huỷ lịch quá hạn =====
+        appointments = []
+
+        if not filter_specialty or filter_specialty == "1":
+            for a in Appointment.objects.using('specialty1').filter(doctor_id=doctor.id):
+                a.specialty_label = SPECIALTY_MAP.get(a.specialty_id, "Không xác định")
+                a._db = 'specialty1'
+                appointments.append(a)
+        if not filter_specialty or filter_specialty == "2":
+            for a in Appointment.objects.using('specialty2').filter(doctor_id=doctor.id):
+                a.specialty_label = SPECIALTY_MAP.get(a.specialty_id, "Không xác định")
+                a._db = 'specialty2'
+                appointments.append(a)
         for a in appointments:
             if a.appointment_time < now() and a.status not in ['completed', 'cancelled']:
                 a.status = 'cancelled'
-                a.save(using=a._state.db)
+                a.save(using=a._db)
 
-        # ===== 3. Sắp xếp =====
         appointments.sort(key=lambda x: x.appointment_time, reverse=True)
 
-        # ===== 4. Load bệnh nhân (JOIN APP-LAYER) =====
         patient_ids = {a.patient_id for a in appointments}
         patient_map = {
             p.id: p
@@ -135,8 +143,6 @@ def appointment_view(request):
 
         for a in appointments:
             a.patient_obj = patient_map.get(a.patient_id)
-
-        # ===== 5. Cập nhật trạng thái =====
         if request.method == 'POST':
             appointment_id = int(request.POST.get('appointment_id'))
             new_status = request.POST.get('status')
@@ -144,16 +150,18 @@ def appointment_view(request):
             for a in appointments:
                 if a.id == appointment_id:
                     a.status = new_status
-                    a.save(using=a._state.db)
+                    a.save(using=a._db)
                     break
 
     except Doctor.DoesNotExist:
         appointments = []
 
     context = {
-        'appointments': appointments
+        'appointments': appointments,
+        'current_specialty': filter_specialty
     }
     return render(request, 'doctor/appointment-list.html', context)
+
 @role_required('doctor')
 def patient_view(request):
     try:
@@ -237,48 +245,82 @@ def prescription(request):
 
 def calendar_view(request):
     doctor = request.user.doctor_profile
-    appointments = Appointment.objects.filter(doctor_id=doctor.id, status__in=['confirmed','completed', 'pending'])
-     # Chuyển đổi dữ liệu lịch hẹn sang định dạng JSON cho FullCalendar
+
     events = []
+    appointments = []
+
+    # ===== LẤY LỊCH HẸN TỪ CÁC DB =====
+    for db in ['specialty1', 'specialty2']:
+        qs = Appointment.objects.using(db).filter(
+            doctor_id=doctor.id,
+            status__in=['confirmed', 'completed', 'pending']
+        )
+        for a in qs:
+            a._db = db
+            appointments.append(a)
+
+    # ===== JOIN PATIENT (APP LAYER) =====
+    patient_ids = {a.patient_id for a in appointments}
+    patient_map = {
+        p.id: p
+        for p in Patient.objects.filter(id__in=patient_ids).select_related('user')
+    }
+
+    # ===== TẠO EVENT CHO FULLCALENDAR =====
     for a in appointments:
+        patient = patient_map.get(a.patient_id)
+
         events.append({
-           'id': a.id,
-            'title': a.patient.user.get_full_name(),
+            'id': a.id,
+            'title': patient.user.get_full_name() if patient else 'Không rõ bệnh nhân',
             'start': a.appointment_time.replace(tzinfo=None).isoformat(),
             'status': a.status,
-            'patient_name': a.patient.user.get_full_name(),
-           
+            'patient_name': patient.user.get_full_name() if patient else '',
         })
-    
+
+    # ===== KÊ ĐƠN =====
     if request.method == 'POST':
-        appointment_id = request.POST.get('appointment_id')
+        appointment_id = int(request.POST.get('appointment_id'))
         diagnosis = request.POST.get('diagnosis')
         note = request.POST.get('note')
-        appointment = get_object_or_404(Appointment, id=appointment_id, doctor_id=doctor.id)
-        doctor = appointment.doctor
-        patient = appointment.patient
-        
+
+        appointment = None
+        for a in appointments:
+            if a.id == appointment_id:
+                appointment = a
+                break
+
+        if not appointment:
+            messages.error(request, "Không tìm thấy lịch hẹn.")
+            return redirect('calendar_view')
+
         prescription = Prescription.objects.create(
-            appointment=appointment,
-            doctor=doctor,
-            patient=patient,
+            appointment_id=appointment.id,
+            doctor_id=doctor.id,
+            patient_id=appointment.patient_id,
             diagnosis=diagnosis,
             note=note
         )
+
         medicine_names = request.POST.getlist('medicine_name[]')
         dosages = request.POST.getlist('dosage[]')
         usages = request.POST.getlist('usage[]')
         quantities = request.POST.getlist('quantity[]')
-        
+
         for i in range(len(medicine_names)):
             if medicine_names[i].strip():
                 prescription.details.create(
                     medication_name=medicine_names[i],
                     dosage=dosages[i],
                     usage=usages[i],
-                    quantity=int(quantities[i]) if i < len(quantities) and quantities[i].isdigit() else 1
+                    quantity=int(quantities[i]) if quantities[i].isdigit() else 1
                 )
+
         messages.success(request, "Kê đơn thành công.")
         return redirect('calendar_view')
-    template = loader.get_template('doctor/calendar.html')
-    return HttpResponse(template.render({'events_json': json.dumps(events)}, request))
+
+    return render(
+        request,
+        'doctor/calendar.html',
+        {'events_json': json.dumps(events)}
+    )

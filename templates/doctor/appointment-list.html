@@ -26,6 +26,7 @@
 							<th>STT</th>
 							<th>Tên bệnh nhân</th>
 							<th>Thời gian hẹn</th>
+							<th>Khoa khám bệnh</th>
 							<th>Trạng thái</th>
 							<th>Đơn thuốc</th>
 							<th class="text-right">Số tiền</th>
@@ -41,11 +42,12 @@
 									<!-- <a href="profile.html" class="avatar avatar-sm mr-2"><img
 														class="avatar-img rounded-circle"
 														src="assets/img/patients/patient1.jpg" ></a> -->
-									<a>{{ appointment.patient.user.get_full_name}} </a>
+									<a>{{ appointment.doctor_obj.user.get_full_name }} </a>
 								</h2>
 							</td>
 							<td>{{appointment.appointment_time| date:"d/m/y H:i"}}</span>
 							</td>
+							<td>{{ appointment.specialty_label }}</td>
 							<td>
 								<div class="status-toggle">
 									<form method="post">

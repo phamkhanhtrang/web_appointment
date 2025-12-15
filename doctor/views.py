@@ -22,38 +22,64 @@ from django.db.models import Prefetch
 def doctor_view(request):
     try:
         doctor = request.user.doctor_profile
-        
-        total_patients = Appointment.objects.filter(doctor_id=doctor.id).values('patient').distinct().count()
 
-        total_appointments = Appointment.objects.filter(doctor_id=doctor.id).count()
+        # Lấy toàn bộ appointment của bác sĩ (từ 2 DB nếu có)
+        appointments = list(
+            Appointment.objects.using('specialty1')
+            .filter(doctor_id=doctor.id)
+        ) + list(
+            Appointment.objects.using('specialty2')
+            .filter(doctor_id=doctor.id)
+        )
 
-        total_revenue = Appointment.objects.filter(doctor_id=doctor.id, 
-                                                   status = 'completed').aggregate(total=Sum('price'))['total'] or 0
+        # Tổng số cuộc hẹn
+        total_appointments = len(appointments)
+
+        # Tổng số bệnh nhân (distinct patient_id)
+        total_patients = len(set(a.patient_id for a in appointments))
+
+        # Tổng doanh thu
+        total_revenue = sum(
+            a.price for a in appointments
+            if a.status == 'completed' and a.price
+        )
         total_revenue_vnd = format_vnd(total_revenue)
 
-        # Thống kê theo bệnh nhân
-        patient_stats = Appointment.objects.filter(doctor_id=doctor.id) \
-            .values('patient__user__username') \
-            .annotate(total=Count('id')) \
-            .order_by('-total')
+        # ---------- THỐNG KÊ THEO BỆNH NHÂN ----------
+        patient_counter = {}
+        for a in appointments:
+            patient_counter[a.patient_id] = patient_counter.get(a.patient_id, 0) + 1
 
-        # Tất cả lịch hẹn
-        appointments = Appointment.objects.filter(doctor_id=doctor.id).order_by('-appointment_time')
+        patients = Patient.objects.filter(id__in=patient_counter.keys()) \
+            .select_related('user')
 
-        # Biểu đồ: cuộc hẹn và doanh thu theo tháng
-        monthly_stats = Appointment.objects.filter(doctor_id=doctor.id, status='completed') \
-            .annotate(month=TruncMonth('appointment_time')) \
-            .values('month') \
-            .annotate(total_appointments=Count('id'), total_revenue=Sum('price')) \
-            .order_by('month')
+        patient_stats = [
+            {
+                'username': p.user.username,
+                'total': patient_counter.get(p.id, 0)
+            }
+            for p in patients
+        ]
+
+        patient_stats.sort(key=lambda x: x['total'], reverse=True)
+
+        # ---------- BIỂU ĐỒ THEO THÁNG ----------
+        monthly_map = {}
+        for a in appointments:
+            if a.status != 'completed':
+                continue
+            month = a.appointment_time.strftime('%Y-%m')
+            monthly_map.setdefault(month, {'appointments': 0, 'revenue': 0})
+            monthly_map[month]['appointments'] += 1
+            monthly_map[month]['revenue'] += float(a.price or 0)
 
         chart_data = [
             {
-                'month': stat['month'].strftime('%Y-%m'),
-                'appointments': stat['total_appointments'],
-                'revenue': float(stat['total_revenue']) if stat['total_revenue'] else 0
+                'month': month,
+                'appointments': data['appointments'],
+                'revenue': data['revenue']
             }
-            for stat in monthly_stats
+            for month, data in sorted(monthly_map.items())
         ]
 
     except Doctor.DoesNotExist:
@@ -70,23 +96,24 @@ def doctor_view(request):
         'total_patients': total_patients,
         'total_appointments': total_appointments,
         'total_revenue_vnd': total_revenue_vnd,
-        'chart_data': json.dumps(chart_data),  # Gửi sang template cho JS
+        'chart_data': json.dumps(chart_data),
     }
 
     return render(request, 'doctor/index.html', context)
+
 @role_required('doctor')
 def appointment_view(request):
     try:
         doctor = request.user.doctor_profile
         # Huỷ các lịch hẹn quá hạn chưa hoàn thành
         expired_appointment = Appointment.objects.filter(
-            doctor=doctor,
+            doctor_id=doctor.id,
             appointment_time__lt=now()
         ).exclude(status__in=['completed', 'cancelled'])
         expired_appointment.update(status='cancelled')
 
         # Danh sách lịch hẹn
-        appointments = Appointment.objects.filter(doctor=doctor).order_by('-appointment_time') \
+        appointments = Appointment.objects.filter(doctor_id=doctor.id).order_by('-appointment_time') \
     .select_related('patient__user') \
     .prefetch_related(
         'prescription__details'
@@ -95,7 +122,7 @@ def appointment_view(request):
         if request.method == 'POST':
             appointment_id = request.POST.get('appointment_id')
             new_status = request.POST.get('status')
-            appointment = get_object_or_404(Appointment, id=appointment_id, doctor=doctor)
+            appointment = get_object_or_404(Appointment, id=appointment_id, doctor_id=doctor.id)
             appointment.status = new_status
             appointment.save()
             # messages.success(request, "Cập nhật trạng thái thành công.")
@@ -111,7 +138,7 @@ def patient_view(request):
         doctor = request.user.doctor_profile
         # Nhóm theo bệnh nhân và đếm số lần đặt lịch
         patient_stats = (
-            Appointment.objects.filter(doctor=doctor)
+            Appointment.objects.filter(doctor_id=doctor.id)
             .values( 'patient__user__phone_number','patient__user__first_name','patient__user__last_name')
             .annotate(
                 total=Count('id'),
@@ -123,7 +150,7 @@ def patient_view(request):
             stat['total_price_vnd'] = format_vnd(stat['total_price'])
 
         # Danh sách tất cả các lịch hẹn (để hiển thị chi tiết nếu cần)
-        appointments = Appointment.objects.filter(doctor=doctor).order_by('-appointment_time')
+        appointments = Appointment.objects.filter(doctor_id=doctor.id).order_by('-appointment_time')
     except Doctor.DoesNotExist:
         appointments = []
         patient_stats = []
@@ -188,7 +215,7 @@ def prescription(request):
 
 def calendar_view(request):
     doctor = request.user.doctor_profile
-    appointments = Appointment.objects.filter(doctor=doctor, status__in=['confirmed','completed', 'pending'])
+    appointments = Appointment.objects.filter(doctor_id=doctor.id, status__in=['confirmed','completed', 'pending'])
      # Chuyển đổi dữ liệu lịch hẹn sang định dạng JSON cho FullCalendar
     events = []
     for a in appointments:
@@ -205,7 +232,7 @@ def calendar_view(request):
         appointment_id = request.POST.get('appointment_id')
         diagnosis = request.POST.get('diagnosis')
         note = request.POST.get('note')
-        appointment = get_object_or_404(Appointment, id=appointment_id)
+        appointment = get_object_or_404(Appointment, id=appointment_id, doctor_id=doctor.id)
         doctor = appointment.doctor
         patient = appointment.patient
         

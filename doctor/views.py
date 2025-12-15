@@ -317,7 +317,9 @@ def calendar_view(request):
         db_name = appointment._db   # specialty1 hoặc specialty2
 
         prescription = Prescription.objects.using(db_name).create(
-     appointment_id=appointment.id,
+    appointment_id=appointment.id,
+    doctor_id=doctor.id,
+    patient_id=appointment.patient_id,
     diagnosis=diagnosis,
     note=note
 )

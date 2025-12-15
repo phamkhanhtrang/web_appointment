@@ -193,7 +193,7 @@ def book_appointment_view(request, doctor_username):
                 patient_id=patient.id,
                 specialty_id=specialty_id,
                 appointment_time=appointment_time,
-                status='confirmed',
+                status='pending',
                 price=price,
                 notes=notes,
             )

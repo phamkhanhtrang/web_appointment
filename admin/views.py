@@ -68,6 +68,8 @@ def admin_login(request):
 
 def admin_appointment(request):
     DB_LIST = ['specialty1', 'specialty2']
+
+    # ===== HỦY LỊCH QUÁ HẠN =====
     for db in DB_LIST:
         Appointment.objects.using(db).filter(
             appointment_time__lt=now()
@@ -75,30 +77,51 @@ def admin_appointment(request):
             status__in=['completed', 'cancelled']
         ).update(status='cancelled')
 
-    admin_total_appointments = 0
-    for db in DB_LIST:
-        admin_total_appointments += Appointment.objects.using(db).count()
-
-    admin_total_revenue = 0
-    for db in DB_LIST:
-        revenue = Appointment.objects.using(db).filter(
-            status='completed'
-        ).aggregate(total=Sum('price'))['total'] or 0
-        admin_total_revenue += revenue
-
-    admin_total_revenue_vnd = format_vnd(admin_total_revenue)
-
+    # ===== LẤY TẤT CẢ APPOINTMENT =====
     all_appointments = []
     for db in DB_LIST:
         for a in Appointment.objects.using(db).all():
-            a._state.db = db  # giữ thông tin DB
+            a._db = db
             all_appointments.append(a)
 
+    # ===== JOIN DOCTOR + PATIENT (DB CHUNG) =====
+    doctor_ids = {a.doctor_id for a in all_appointments}
+    patient_ids = {a.patient_id for a in all_appointments}
+
+    doctor_map = {
+        d.id: d
+        for d in Doctor.objects.filter(id__in=doctor_ids)
+        .select_related('user')
+    }
+
+    patient_map = {
+        p.id: p
+        for p in Patient.objects.filter(id__in=patient_ids)
+        .select_related('user')
+    }
+
+    for a in all_appointments:
+        a.doctor_obj = doctor_map.get(a.doctor_id)
+        a.patient_obj = patient_map.get(a.patient_id)
+
+    # ===== THỐNG KÊ TỔNG =====
+    admin_total_appointments = len(all_appointments)
+
+    admin_total_revenue = sum(
+        float(a.price)
+        for a in all_appointments
+        if a.status == 'completed'
+    )
+    admin_total_revenue_vnd = format_vnd(admin_total_revenue)
+
+    # ===== 10 LỊCH MỚI NHẤT =====
     admin_list_appointment = sorted(
         all_appointments,
         key=lambda x: x.appointment_time,
         reverse=True
     )[:10]
+
+    # ===== THỐNG KÊ THEO NGÀY =====
     daily_map = defaultdict(lambda: {
         'appointments': 0,
         'revenue': 0,
@@ -118,59 +141,10 @@ def admin_appointment(request):
     admin_chart_data = [
         {
             'day': day,
-            'appointments': data['appointments'],
-            'revenue': data['revenue'],
-            'confirmed': data['confirmed'],
-            'pending': data['pending'],
-            'completed': data['completed'],
-            'cancelled': data['cancelled'],
+            **data
         }
         for day, data in sorted(daily_map.items())
     ]
-    start = request.GET.get("start")
-    end = request.GET.get("end")
-
-    if request.GET.get("export") == "1" and start and end:
-        start_date = parse_date(start)
-        end_date = parse_date(end)
-
-        export_data = defaultdict(lambda: {
-            'total': 0,
-            'confirmed': 0,
-            'pending': 0,
-            'completed': 0,
-            'cancelled': 0,
-        })
-
-        for a in all_appointments:
-            day = a.appointment_time.date()
-            if start_date <= day <= end_date:
-                export_data[day]['total'] += 1
-                export_data[day][a.status] += 1
-
-        rows = []
-        for day, data in sorted(export_data.items()):
-            rows.append({
-                'Ngày': day.strftime('%Y-%m-%d'),
-                'Số lịch hẹn': data['total'],
-                'Confirmed': data['confirmed'],
-                'Pending': data['pending'],
-                'Completed': data['completed'],
-                'Cancelled': data['cancelled'],
-            })
-
-        df = pd.DataFrame(rows)
-
-        response = HttpResponse(
-            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        filename = f"BaoCao_{start}_den_{end}.xlsx"
-        response["Content-Disposition"] = f'attachment; filename="{filename}"'
-
-        with pd.ExcelWriter(response, engine="openpyxl") as writer:
-            df.to_excel(writer, sheet_name="Thống kê lịch hẹn", index=False)
-
-        return response
 
     context = {
         'admin_total_appointments': admin_total_appointments,
@@ -179,8 +153,7 @@ def admin_appointment(request):
         'admin_chart_data': json.dumps(admin_chart_data),
     }
 
-    template = loader.get_template('admin/appointment-list.html')
-    return HttpResponse(template.render(context, request))
+    return render(request, 'admin/appointment-list.html', context)
 
 def admin_doctor(request):
     from collections import defaultdict

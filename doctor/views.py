@@ -116,7 +116,7 @@ def appointment_view(request):
         filter_specialty = request.GET.get("specialty")
         appointments = []
 
-        # ===== LẤY APPOINTMENT TỪ CÁC DB =====
+        # ===== LẤY APPOINTMENT =====
         if not filter_specialty or filter_specialty == "1":
             for a in Appointment.objects.using('specialty1').filter(doctor_id=doctor.id):
                 a.specialty_label = SPECIALTY_MAP.get(a.specialty_id, "Không xác định")
@@ -144,22 +144,19 @@ def appointment_view(request):
             for p in Patient.objects.filter(id__in=patient_ids).select_related('user')
         }
 
-        # ===== JOIN PRESCRIPTION + DETAILS =====
-        appointment_ids = [a.id for a in appointments]
-
-        prescriptions = (
-            Prescription.objects
-            .filter(appointment_id__in=appointment_ids)
-            .prefetch_related('details')
-        )
-
-        prescription_map = {
-            p.appointment_id: p for p in prescriptions
-        }
-
+        # ===== JOIN PRESCRIPTION THEO ĐÚNG DB =====
         for a in appointments:
             a.patient_obj = patient_map.get(a.patient_id)
-            a.prescription = prescription_map.get(a.id)  # ⭐ QUAN TRỌNG
+
+            try:
+                a.prescription = (
+                    Prescription.objects
+                    .using(a._db)   # ⭐ CỰC KỲ QUAN TRỌNG
+                    .prefetch_related('details')
+                    .get(appointment_id=a.id)
+                )
+            except Prescription.DoesNotExist:
+                a.prescription = None
 
         # ===== UPDATE STATUS =====
         if request.method == 'POST':
@@ -183,7 +180,6 @@ def appointment_view(request):
             'current_specialty': filter_specialty
         }
     )
-
 @role_required('doctor')
 def patient_view(request):
     try:

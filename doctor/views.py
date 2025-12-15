@@ -108,25 +108,28 @@ def appointment_view(request):
     try:
         doctor = request.user.doctor_profile
 
-        # ===== Map khoa =====
         SPECIALTY_MAP = {
             1: "Khoa Nội",
             2: "Khoa Ngoại",
         }
-        filter_specialty = request.GET.get("specialty")  # "1" hoặc "2"
 
+        filter_specialty = request.GET.get("specialty")
         appointments = []
 
+        # ===== LẤY APPOINTMENT TỪ CÁC DB =====
         if not filter_specialty or filter_specialty == "1":
             for a in Appointment.objects.using('specialty1').filter(doctor_id=doctor.id):
                 a.specialty_label = SPECIALTY_MAP.get(a.specialty_id, "Không xác định")
                 a._db = 'specialty1'
                 appointments.append(a)
+
         if not filter_specialty or filter_specialty == "2":
             for a in Appointment.objects.using('specialty2').filter(doctor_id=doctor.id):
                 a.specialty_label = SPECIALTY_MAP.get(a.specialty_id, "Không xác định")
                 a._db = 'specialty2'
                 appointments.append(a)
+
+        # ===== HỦY LỊCH QUÁ HẠN =====
         for a in appointments:
             if a.appointment_time < now() and a.status not in ['completed', 'cancelled']:
                 a.status = 'cancelled'
@@ -134,15 +137,31 @@ def appointment_view(request):
 
         appointments.sort(key=lambda x: x.appointment_time, reverse=True)
 
+        # ===== JOIN PATIENT =====
         patient_ids = {a.patient_id for a in appointments}
         patient_map = {
             p.id: p
-            for p in Patient.objects.filter(id__in=patient_ids)
-            .select_related('user')
+            for p in Patient.objects.filter(id__in=patient_ids).select_related('user')
+        }
+
+        # ===== JOIN PRESCRIPTION + DETAILS =====
+        appointment_ids = [a.id for a in appointments]
+
+        prescriptions = (
+            Prescription.objects
+            .filter(appointment_id__in=appointment_ids)
+            .prefetch_related('details')
+        )
+
+        prescription_map = {
+            p.appointment_id: p for p in prescriptions
         }
 
         for a in appointments:
             a.patient_obj = patient_map.get(a.patient_id)
+            a.prescription = prescription_map.get(a.id)  # ⭐ QUAN TRỌNG
+
+        # ===== UPDATE STATUS =====
         if request.method == 'POST':
             appointment_id = int(request.POST.get('appointment_id'))
             new_status = request.POST.get('status')
@@ -156,11 +175,14 @@ def appointment_view(request):
     except Doctor.DoesNotExist:
         appointments = []
 
-    context = {
-        'appointments': appointments,
-        'current_specialty': filter_specialty
-    }
-    return render(request, 'doctor/appointment-list.html', context)
+    return render(
+        request,
+        'doctor/appointment-list.html',
+        {
+            'appointments': appointments,
+            'current_specialty': filter_specialty
+        }
+    )
 
 @role_required('doctor')
 def patient_view(request):
@@ -286,8 +308,6 @@ def calendar_view(request):
         p.id: p
         for p in Patient.objects.filter(id__in=patient_ids).select_related('user')
     }
-
-    # ===== TẠO EVENT CHO FULLCALENDAR =====
     for a in appointments:
         patient = patient_map.get(a.patient_id)
 
@@ -299,7 +319,6 @@ def calendar_view(request):
             'patient_name': patient.user.get_full_name() if patient else '',
         })
 
-    # ===== KÊ ĐƠN =====
     # ===== KÊ ĐƠN =====
     if request.method == 'POST':
         appointment_id = int(request.POST.get('appointment_id'))
@@ -317,11 +336,11 @@ def calendar_view(request):
         db_name = appointment._db   # specialty1 hoặc specialty2
 
         prescription = Prescription.objects.using(db_name).create(
-    appointment_id=appointment.id,
-    doctor_id=doctor.id,
-    patient_id=appointment.patient_id,
-    diagnosis=diagnosis,
-    note=note
+            appointment_id=appointment.id,
+            doctor_id=doctor.id,
+            patient_id=appointment.patient_id,
+            diagnosis=diagnosis,
+            note=note
 )
         medicine_names = request.POST.getlist('medicine_name[]')
         dosages = request.POST.getlist('dosage[]')

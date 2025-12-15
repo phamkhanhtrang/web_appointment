@@ -317,13 +317,10 @@ def calendar_view(request):
         db_name = appointment._db   # specialty1 hoặc specialty2
 
         prescription = Prescription.objects.using(db_name).create(
-    appointment_id=appointment.id,
-    doctor_id=doctor.id,
-    patient_id=appointment.patient_id,
+     appointment_id=appointment.id,
     diagnosis=diagnosis,
     note=note
 )
-
         medicine_names = request.POST.getlist('medicine_name[]')
         dosages = request.POST.getlist('dosage[]')
         usages = request.POST.getlist('usage[]')
@@ -331,12 +328,13 @@ def calendar_view(request):
 
         for i in range(len(medicine_names)):
             if medicine_names[i].strip():
-               prescription.details.using(db_name).create(
-    medication_name=medicine_names[i],
-    dosage=dosages[i],
-    usage=usages[i],
-    quantity=int(quantities[i]) if quantities[i].isdigit() else 1
-)
+               PrescriptionDetail.objects.using(db_name).create(
+            prescription_id=prescription.id,
+            medication_name=medicine_names[i],
+            dosage=dosages[i],
+            usage=usages[i],
+            quantity=int(quantities[i]) if quantities[i].isdigit() else 1
+        )
         messages.success(request, "Kê đơn thành công.")
         return redirect('calendar_view')
 

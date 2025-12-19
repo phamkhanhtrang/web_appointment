@@ -174,7 +174,10 @@ def book_appointment_view(request, doctor_username):
     ) + list(
         Appointment.objects.using('specialty2').filter(doctor_id=doctor.id)
     )
-
+    try:
+        specialty_name = Specialty.objects.get(id=specialty_id).name
+    except Specialty.DoesNotExist:
+        specialty_name = ""
     if request.method == "POST":
         appointment_time = datetime.strptime(
             request.POST.get("appointment_time"),
@@ -196,6 +199,7 @@ def book_appointment_view(request, doctor_username):
                 status='pending',
                 price=price,
                 notes=notes,
+                
             )
 
         messages.success(request, "Đặt lịch thành công!")
@@ -223,6 +227,7 @@ def book_appointment_view(request, doctor_username):
         "schedules": json.dumps(data),
         "doctor_specialties": doctor.specialties.all(),
         "selected_specialty_id": specialty_id,
+        "selected_specialty_name": specialty_name,
     })
 
 
